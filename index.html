@@ -605,10 +605,6 @@
         align-items: center;
     }
 
-    .music-cell.playing {
-        width: 40px;
-        justify-content: center;
-    }
 
     .music-cell.name {
         width: 100%;
@@ -648,12 +644,12 @@
     <div class="player">
         <div class="player-row">
         <div class="controls">
-            <button id="prevBtn"><i class="fas fa-backward"></i></button>
-            <button class="play" id="playPauseBtn"><i class="fas fa-play"></i></button>
-            <button id="nextBtn"><i class="fas fa-forward"></i></button>
+            <button><i class="fas fa-backward"></i></button>
+            <button class="play"><i class="fas fa-play"></i></button>
+            <button><i class="fas fa-forward"></i></button>
         </div>
         <div class="volume">
-            <input type="range" min="0" max="100" value="50" id="volumeControl">
+            <input type="range" min="0" max="100" value="50">
         </div>
     </div>
 </div>
@@ -688,15 +684,15 @@
             <div class="side-section">
                 <div class="side-title">Biblioteca</div>
                 <div class="side-options">
-                    <button class="side-btn"><i class="fa-solid fa-bars"></i> Adições Recentes</button>
-                    <button class="side-btn"><i class="fa-solid fa-bars"></i> Musicas</button>
+                    <button class="side-btn"><i class="fa-solid fa-calendar"></i> Adições Recentes</button>
+                    <button class="side-btn"><i class="fa-solid fa-music"></i> Musicas</button>
                 </div>
             </div>
             <div class="side-section">
                 <div class="side-title">Playlists de Música</div>
                 <div class="side-options">
-                    <button class="side-btn"><i class="fa-solid fa-bars"></i> Mais Ouvidas</button>
-                    <button class="side-btn"><i class="fa-solid fa-bars"></i> Favoritas</button>
+                    <button class="side-btn"><i class="fa-solid fa-arrow-up-right-dots"></i> Mais Ouvidas</button>
+                    <button class="side-btn"><i class="fa-solid fa-heart"></i> Favoritas</button>
                 </div>
             </div>
         </div>
@@ -742,65 +738,19 @@
 
 <!-- Player invisível para tocar as músicas -->
 <div class="player-container">
-    <iframe id="youtubePlayer" width="560" height="315" frameborder="0" allow="autoplay" allowfullscreen></iframe>
+    <iframe id="youtubePlayer" width="0" height="0" frameborder="0" allow="autoplay"></iframe>
 </div>
 
 </body>
 <script>
-// Tag da API do YouTube
-var tag = document.createElement('script');
-tag.src = "https://www.youtube.com/iframe_api";
-var firstScriptTag = document.getElementsByTagName('script')[0];
-firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
-
 const modal = document.getElementById("addModal");
 const botao = document.getElementById("abrirInput");
 const linkInput = document.querySelector(".link-input");
 const addBtn = document.querySelector(".add-msc-btn");
-const playPauseBtn = document.getElementById("playPauseBtn");
-const prevBtn = document.getElementById("prevBtn");
-const nextBtn = document.getElementById("nextBtn");
-const volumeControl = document.getElementById("volumeControl");
+const youtubePlayer = document.getElementById("youtubePlayer");
 
 let musicas = JSON.parse(localStorage.getItem('musicas')) || [];
 let currentPlaying = null;
-let player;
-let isPlaying = false;
-
-// Callback quando a API do YouTube estiver pronta
-function onYouTubeIframeAPIReady() {
-    player = new YT.Player('youtubePlayer', {
-        height: '0',
-        width: '0',
-        playerVars: {
-            'playsinline': 1,
-            'controls': 0
-        },
-        events: {
-            'onReady': onPlayerReady,
-            'onStateChange': onPlayerStateChange
-        }
-    });
-}
-
-function onPlayerReady(event) {
-    // Player pronto
-    volumeControl.value = 50;
-    player.setVolume(50);
-}
-
-function onPlayerStateChange(event) {
-    if (event.data == YT.PlayerState.PLAYING) {
-        isPlaying = true;
-        playPauseBtn.innerHTML = '<i class="fas fa-pause"></i>';
-    } else if (event.data == YT.PlayerState.PAUSED) {
-        isPlaying = false;
-        playPauseBtn.innerHTML = '<i class="fas fa-play"></i>';
-    } else if (event.data == YT.PlayerState.ENDED) {
-        // Quando terminar, toca a próxima
-        nextMusic();
-    }
-}
 
 // Função para extrair ID do YouTube
 function extractYouTubeID(url) {
@@ -809,7 +759,7 @@ function extractYouTubeID(url) {
     return (match && match[7].length == 11) ? match[7] : null;
 }
 
-// Função para buscar informações do vídeo
+// Função para buscar informações do vídeo (usando oEmbed API do YouTube)
 async function getVideoInfo(videoId) {
     try {
         const response = await fetch(`https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`);
@@ -842,6 +792,7 @@ addBtn.onclick = async function() {
         return;
     }
     
+    // Buscar informações do vídeo
     const videoInfo = await getVideoInfo(videoId);
     
     const novaMusica = {
@@ -874,6 +825,7 @@ function renderMusicas() {
     const likedCol = document.getElementById('likedColumn');
     const listenedCol = document.getElementById('listenedColumn');
     
+    // Limpar colunas
     playingCol.innerHTML = '';
     nameCol.innerHTML = '';
     durationCol.innerHTML = '';
@@ -883,43 +835,50 @@ function renderMusicas() {
     listenedCol.innerHTML = '';
     
     musicas.forEach((musica, index) => {
-        const isCurrentlyPlaying = currentPlaying === index;
+        const isPlaying = currentPlaying === index;
         
+        // Coluna Playing (ícone)
         const playingCell = document.createElement('div');
-        playingCell.className = `music-cell playing ${isCurrentlyPlaying ? 'playing' : ''}`;
-        playingCell.innerHTML = isCurrentlyPlaying ? '<i class="fas fa-play"></i>' : '';
+        playingCell.className = `music-cell playing ${isPlaying ? 'playing' : ''}`;
+        playingCell.innerHTML = isPlaying ? '<i class="fas fa-play"></i>' : '';
         playingCell.onclick = () => playMusic(index);
         playingCol.appendChild(playingCell);
         
+        // Coluna Nome
         const nameCell = document.createElement('div');
-        nameCell.className = `music-cell name ${isCurrentlyPlaying ? 'playing' : ''}`;
+        nameCell.className = `music-cell name ${isPlaying ? 'playing' : ''}`;
         nameCell.textContent = musica.title;
         nameCell.onclick = () => playMusic(index);
         nameCol.appendChild(nameCell);
         
+        // Coluna Duração
         const durationCell = document.createElement('div');
         durationCell.className = 'music-cell';
         durationCell.textContent = musica.duration;
         durationCell.onclick = () => playMusic(index);
         durationCol.appendChild(durationCell);
         
+        // Coluna Artista
         const artistCell = document.createElement('div');
         artistCell.className = 'music-cell';
         artistCell.textContent = musica.artist;
         artistCell.onclick = () => playMusic(index);
         artistCol.appendChild(artistCell);
         
+        // Coluna Gênero
         const genreCell = document.createElement('div');
         genreCell.className = 'music-cell';
         genreCell.textContent = musica.genre;
         genreCell.onclick = () => playMusic(index);
         genreCol.appendChild(genreCell);
         
+        // Coluna Curtido
         const likedCell = document.createElement('div');
         likedCell.className = 'music-cell';
         likedCell.innerHTML = musica.liked ? '<i class="fas fa-heart" style="color: #f44336;"></i>' : '';
         likedCol.appendChild(likedCell);
         
+        // Coluna Escutado
         const listenedCell = document.createElement('div');
         listenedCell.className = 'music-cell';
         listenedCell.innerHTML = musica.listened ? '<i class="fas fa-check" style="color: #4caf50;"></i>' : '';
@@ -929,75 +888,20 @@ function renderMusicas() {
 
 // Tocar música
 function playMusic(index) {
-    if (!player || !player.loadVideoById) {
-        alert('Player ainda não está pronto. Aguarde alguns segundos.');
-        return;
-    }
-    
     const musica = musicas[index];
     currentPlaying = index;
     
+    // Marcar como escutada
     musicas[index].listened = true;
     localStorage.setItem('musicas', JSON.stringify(musicas));
     
-    player.loadVideoById(musica.videoId);
-    isPlaying = true;
+    // Carregar vídeo no iframe
+    youtubePlayer.src = `https://www.youtube.com/embed/${musica.videoId}?autoplay=1&enablejsapi=1`;
     
     renderMusicas();
 }
 
-// Controle Play/Pause
-playPauseBtn.onclick = function() {
-    if (!player || !player.getPlayerState) {
-        alert('Nenhuma música carregada. Adicione e selecione uma música primeiro.');
-        return;
-    }
-    
-    if (isPlaying) {
-        player.pauseVideo();
-    } else {
-        player.playVideo();
-    }
-};
-
-// Música anterior
-prevBtn.onclick = function() {
-    if (musicas.length === 0) return;
-    
-    if (currentPlaying === null) {
-        playMusic(0);
-    } else if (currentPlaying > 0) {
-        playMusic(currentPlaying - 1);
-    } else {
-        playMusic(musicas.length - 1); // Volta para a última
-    }
-};
-
-// Próxima música
-nextBtn.onclick = function() {
-    nextMusic();
-};
-
-function nextMusic() {
-    if (musicas.length === 0) return;
-    
-    if (currentPlaying === null) {
-        playMusic(0);
-    } else if (currentPlaying < musicas.length - 1) {
-        playMusic(currentPlaying + 1);
-    } else {
-        playMusic(0); // Volta para a primeira
-    }
-}
-
-// Controle de volume
-volumeControl.oninput = function() {
-    if (player && player.setVolume) {
-        player.setVolume(this.value);
-    }
-};
-
-// Modal
+// Modal - Alterna entre abrir e fechar
 botao.onclick = function() {
   if (modal.classList.contains("ativo")) {
     fecharModal();
@@ -1009,6 +913,7 @@ botao.onclick = function() {
   }
 }
 
+// Fecha o modal
 function fecharModal() {
   modal.classList.remove("ativo");
   setTimeout(() => {
@@ -1016,6 +921,7 @@ function fecharModal() {
   }, 300);
 }
 
+// Fecha clicando fora do modal
 window.onclick = function(event) {
   if (event.target == modal) {
     fecharModal();

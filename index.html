@@ -22,9 +22,7 @@
         display: none;
     }
 
-    /* ══════════════════════════════════
-       NAVBAR TOPO
-    ══════════════════════════════════ */
+
     .navbar-top {
       background: linear-gradient(0deg, #b3b3b3 0%, rgba(229,229,229,1) 100%);
       border-bottom: 1px solid #919191;
@@ -76,7 +74,6 @@
       cursor: pointer; font-family: Arial, sans-serif;
     }
 
-    /* Player central */
     .player {
       background-color: #f1f1f1;
       height: 100%;
@@ -144,7 +141,7 @@
     }
     .player-empty span { font-size: 13px; color: #aaa; }
 
-    /* Volume */
+
     .volume-area {
       display: flex; align-items: center; gap: 8px;
       padding: 0 10px; height: 100%; flex-shrink: 0;
@@ -169,9 +166,7 @@
       padding: 5px 12px; flex-shrink: 0; margin-left: 6px;
     }
 
-    /* ══════════════════════════════════
-       MAIN LAYOUT
-    ══════════════════════════════════ */
+
     .main {
       height: 100vh;
       width: 100vw;
@@ -197,7 +192,7 @@
     .control-btn:hover:not(.active) { background: #ddd; }
     .control-btn.active { color: #fff; background-color: #105bfd; }
 
-    /* Add music dropdown */
+
     .add-music {
       display: none;
       position: fixed;
@@ -255,9 +250,7 @@
       clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
     }
 
-    /* ══════════════════════════════════
-       MAIN SECTIONS
-    ══════════════════════════════════ */
+
     .main-sections {
       border-top: 1px solid #ccc;
       flex: 1; width: 100%;
@@ -369,9 +362,7 @@
     .empty-state i { font-size: 40px; color: #ccc; }
     .empty-state p { font-size: 14px; color: #aaa; text-align: center; }
 
-    /* ══════════════════════════════════
-       MODALS / OVERLAYS
-    ══════════════════════════════════ */
+
     .overlay {
       position: fixed; inset: 0; z-index: 900;
       background: rgba(0, 0, 0, 0); backdrop-filter: blur(0px);
@@ -380,7 +371,7 @@
     }
     .overlay.open { opacity: 1; pointer-events: all; }
 
-    /* Search overlay (top-aligned) */
+
     .overlay-search {
       align-items: flex-start;
       padding-top: 80px;
@@ -518,9 +509,7 @@
 </head>
 <body>
 
-<!-- ══════════════════════════════════════════════
-     NAVBAR TOPO
-══════════════════════════════════════════════ -->
+
 <nav class="navbar-top">
   <div class="logo-area">
     <div class="logo">Synapse</div>
@@ -533,12 +522,11 @@
     </div>
   </div>
 
-  <!-- Now playing / player area -->
+
   <div id="navPlayer" class="player-empty">
     <span>Nenhuma música tocando</span>
   </div>
 
-  <!-- Volume -->
   <div class="volume-area">
     <i class="fas fa-volume-low" id="volIcon"></i>
     <input type="range" class="vol-range" min="0" max="100" value="80" id="volSlider">
@@ -547,12 +535,9 @@
   <button class="icon-button"><i class="fa-solid fa-bars"></i></button>
 </nav>
 
-<!-- ══════════════════════════════════════════════
-     MAIN
-══════════════════════════════════════════════ -->
+
 <div class="main">
 
-  <!-- Barra de controles -->
   <div class="top-controlers">
     <div class="controlers">
       <button class="control-btn active" id="btnAll"    onclick="switchView('all')">Biblioteca</button>
@@ -562,7 +547,7 @@
       <button class="control-btn"        id="abrirInput">Adicionar Músicas</button>
     </div>
 
-    <!-- Add music dropdown -->
+ 
     <div class="add-music" id="addModal">
       <div class="add-msc-container">
         <div class="add-msc-area">
@@ -577,10 +562,9 @@
     </div>
   </div>
 
-  <!-- Seções -->
   <div class="main-sections">
 
-    <!-- Sidebar -->
+
     <div class="side-bar">
       <div class="side-section">
         <div class="side-title">Biblioteca</div>
@@ -608,19 +592,15 @@
       </div>
     </div>
 
-    <!-- Content area (colunas) -->
     <div class="content-area" id="contentArea"></div>
   </div>
 </div>
 
-<!-- Hidden YT iframe -->
+
 <div class="player-container">
   <iframe id="youtubePlayer" width="0" height="0" frameborder="0" allow="autoplay"></iframe>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     MODAL: BUSCA
-══════════════════════════════════════════════ -->
 <div class="overlay overlay-search" id="searchOverlay" onclick="overlayClick(event,'searchOverlay')">
   <div class="modal-box">
     <div class="search-input-wrap">Musicas
@@ -631,9 +611,6 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     MODAL: NOVA PLAYLIST
-══════════════════════════════════════════════ -->
 <div class="overlay" id="plOverlay" onclick="overlayClick(event,'plOverlay')">
   <div class="modal-box">
     <div class="modal-header">
@@ -650,9 +627,6 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════════════
-     MODAL: GENIUS
-══════════════════════════════════════════════ -->
 <div class="overlay" id="geniusOverlay" onclick="overlayClick(event,'geniusOverlay')">
   <div class="modal-box genius-modal-box">
     <div class="modal-header">
@@ -703,7 +677,6 @@ let currentDuration  = 0;
 
 const youtubePlayer = document.getElementById('youtubePlayer');
 
-// Ouve mensagens do iframe do YouTube para detectar fim de vídeo
 window.addEventListener('message', function(e) {
   try {
     var data = JSON.parse(e.data);

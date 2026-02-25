@@ -507,8 +507,9 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     .player-container {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      height: 0; overflow: hidden; z-index: -1;
+      position: fixed; bottom: 0; left: 0;
+      width: 1px; height: 1px;
+      opacity: 0; pointer-events: none; z-index: -1;
     }
 
     ::-webkit-scrollbar { width: 5px; }
@@ -614,7 +615,7 @@
 
 <!-- Hidden YT iframe -->
 <div class="player-container">
-  <iframe id="ytFrame" width="1" height="1" frameborder="0" allow="autoplay"></iframe>
+  <div id="ytFrame"></div>
 </div>
 
 <!-- ══════════════════════════════════════════════
@@ -712,7 +713,7 @@ let currentDuration  = 0;
 window.onYouTubeIframeAPIReady = function() {
   ytPlayer = new YT.Player('ytFrame', {
     height: '1', width: '1',
-    playerVars: { autoplay: 0, controls: 0 },
+    playerVars: { autoplay: 1, controls: 0, origin: window.location.origin },
     events: {
       onReady:       () => { ytReady = true; setVolume(parseInt(document.getElementById('volSlider').value)); },
       onStateChange: onStateChange

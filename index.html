@@ -695,17 +695,29 @@ let currentPlIdView  = null;
 let currentPlaying   = null;
 let isPlaying        = false;
 let isShuffle        = false;
-let loopMode         = 0;     // 0=off 1=loop-all 2=loop-one
+let loopMode         = 0;
 let isGenius         = false;
-let ytReady          = false;
 let progressInterval = null;
 let currentTime      = 0;
 let currentDuration  = 0;
 
-
 const youtubePlayer = document.getElementById('youtubePlayer');
 
-
+// Ouve mensagens do iframe do YouTube para detectar fim de vídeo
+window.addEventListener('message', function(e) {
+  try {
+    var data = JSON.parse(e.data);
+    if (data.event === 'onStateChange') {
+      if (data.info === 0) { // ended
+        if (currentPlaying !== null) {
+          musicas[currentPlaying].completions = (musicas[currentPlaying].completions || 0) + 1;
+          salvarMusicas();
+        }
+        proxima(true);
+      }
+    }
+  } catch(_) {}
+});
 
 
 function extractYTID(url) {
@@ -726,7 +738,7 @@ function toast(msg, dur) {
   setTimeout(() => el.classList.remove('show'), dur);
 }
 function setVolume(v) {
-  if (ytReady) { try { youtubePlayer.contentWindow.postMessage('{"event":"command","func":"setVolume","args":[' + v + ']}', '*'); } catch(_){} }
+  try { youtubePlayer.contentWindow.postMessage('{"event":"command","func":"setVolume","args":[' + v + ']}', '*'); } catch(_){}
   const ic = document.getElementById('volIcon');
   if (ic) ic.className = v === 0 ? 'fas fa-volume-xmark' : v < 50 ? 'fas fa-volume-low' : 'fas fa-volume-high';
 }
@@ -802,9 +814,7 @@ function playMusic(index) {
     .filter(t => Date.now() - t < 7 * 24 * 3600 * 1000).slice(-50);
   salvarMusicas();
 
-  if (ytReady) {
-    youtubePlayer.src = 'https://www.youtube.com/embed/' + m.videoId + '?autoplay=1&enablejsapi=1';
-  }
+  youtubePlayer.src = 'https://www.youtube.com/embed/' + m.videoId + '?autoplay=1&enablejsapi=1';
   isPlaying = true;
   renderNavPlayer(m);
   renderMusicas();
@@ -845,10 +855,10 @@ function proxima(auto) {
 
 function seekTo(e) {
   const bar = document.getElementById('npBar');
-  if (!bar || !ytReady || !currentDuration) return;
+  if (!bar || !currentDuration) return;
   const rect = bar.getBoundingClientRect();
-  const seekTime = ((e.clientX - rect.left) / rect.width) * currentDuration;
-  youtubePlayer.contentWindow.postMessage('{"event":"command","func":"seekTo","args":[' + seekTime + ', true]}', '*');
+  const t = ((e.clientX - rect.left) / rect.width) * currentDuration;
+  youtubePlayer.contentWindow.postMessage('{"event":"command","func":"seekTo","args":[' + t + ',true]}', '*');
 }
 
 function atualizarBotaoPlay() {

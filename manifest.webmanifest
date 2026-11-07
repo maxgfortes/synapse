@@ -1,0 +1,43 @@
+{
+  "id": "./",
+  "name": "Synapse",
+  "short_name": "Synapse",
+  "description": "Player de música com ordem inteligente que aprende no próprio aparelho.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "./index.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#000000",
+  "theme_color": "#000000",
+  "categories": ["music", "entertainment"],
+  "icons": [
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icons/monochrome-512.png", "sizes": "512x512", "type": "image/png", "purpose": "monochrome" },
+    { "src": "assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Adicionar músicas",
+      "url": "./index.html?shortcut=add",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "./index.html",
+      "accept": { "audio/*": [".mp3", ".m4a", ".aac", ".flac", ".ogg", ".opus", ".wav"] }
+    }
+  ],
+  "share_target": {
+    "action": "./index.html",
+    "method": "GET",
+    "params": { "title": "title", "text": "text", "url": "url" }
+  },
+  "launch_handler": { "client_mode": "focus-existing" }
+}

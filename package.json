@@ -1,0 +1,12 @@
+{
+  "name": "synapse",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Player de música com ordem inteligente que aprende no próprio aparelho.",
+  "type": "module",
+  "scripts": {
+    "start": "node tools/serve.mjs",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "license": "MIT"
+}

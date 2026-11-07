@@ -1,0 +1,76 @@
+:root {
+  --accent: #0071e3;
+  --text: #1d1d1f;
+  --muted: #6e6e73;
+  --line: #d9d9de;
+  color-scheme: light;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-text-size-adjust: 100%; touch-action: pan-x pan-y; }
+
+body {
+  margin: 0;
+  background: #fff;
+  color: var(--text);
+  font: 17px/1.6 -apple-system, BlinkMacSystemFont, "SF Pro", "Helvetica Neue", Arial, sans-serif;
+}
+
+a { color: var(--accent); }
+
+.top {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: linear-gradient(#efefef, #dfdfdf);
+  border-bottom: 1px solid #bdbdbd;
+  padding-top: env(safe-area-inset-top, 0);
+}
+
+.top div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 760px;
+  min-height: 46px;
+  margin: 0 auto;
+  padding: 4px 20px;
+}
+
+.brand { display: flex; align-items: center; gap: 8px; color: var(--text); font-weight: 600; text-decoration: none; }
+.brand img { width: 26px; height: 26px; border-radius: 6px; }
+
+.top nav { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; }
+.top nav a { color: #3a3a3c; text-decoration: none; }
+.top nav a:hover, .top nav a[aria-current] { color: var(--accent); }
+
+main { max-width: 760px; margin: 0 auto; padding: 34px 20px 56px; }
+
+h1 { margin: 0 0 8px; font-size: 38px; font-weight: 300; line-height: 1.15; }
+h2 { margin: 34px 0 8px; font-size: 22px; font-weight: 400; }
+p, ul { margin: 0 0 14px; }
+ul { padding-left: 22px; }
+li { margin-bottom: 4px; }
+
+.lead { color: var(--muted); font-size: 20px; font-weight: 300; }
+
+.button {
+  display: inline-block;
+  margin: 8px 8px 0 0;
+  padding: 8px 18px;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  text-decoration: none;
+}
+.button.alt { background: #f0f0f2; color: var(--text); }
+
+footer { border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+footer div { display: flex; flex-wrap: wrap; gap: 6px 18px; justify-content: space-between; max-width: 760px; margin: 0 auto; padding: 16px 20px calc(16px + env(safe-area-inset-bottom, 0)); }
+
+@media (max-width: 560px) {
+  h1 { font-size: 30px; }
+  .lead { font-size: 18px; }
+}

@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "synapse",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["tools/serve.mjs", "5177"],
+      "port": 5177
+    }
+  ]
+}

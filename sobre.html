@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Sobre o Synapse e o Metís | Player de música inteligente</title>
+  <meta name="description" content="Como o Synapse funciona: o Metís estima seu clima com hora, tempo e histórico e cria uma ordem infinita de músicas, com aprendizado de máquina no próprio aparelho.">
+  <link rel="canonical" href="https://maxgfortes.github.io/synapse/sobre.html">
+  <meta property="og:type" content="article">
+  <meta property="og:title" content="Sobre o Synapse e o Metís">
+  <meta property="og:description" content="Uma ordem infinita de músicas que acompanha seu momento e aprende no seu aparelho.">
+  <meta property="og:url" content="https://maxgfortes.github.io/synapse/sobre.html">
+  <meta property="og:image" content="https://maxgfortes.github.io/synapse/assets/og-image.png">
+  <link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="css/fonts.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <script src="js/no-zoom.js"></script>
+</head>
+<body>
+  <header class="top"><div>
+    <a class="brand" href="index.html"><img src="assets/icons/icon.svg" alt="">Synapse</a>
+    <nav aria-label="Páginas"><a href="index.html">Abrir o player</a><a href="sobre.html" aria-current="page">Sobre</a><a href="termos.html">Termos</a><a href="contato.html">Contato</a></nav>
+  </div></header>
+  <main>
+    <h1>Sobre o Synapse</h1>
+    <p class="lead">Um player de música que descobre a ordem certa para cada momento. Sem conta, sem servidor e com todo o aprendizado no seu aparelho.</p>
+    <p><a class="button" href="index.html">Abrir o player</a><a class="button alt" href="https://github.com/maxgfortes/synapse">Ver o código</a></p>
+
+    <h2>O que é o Metís</h2>
+    <p>Metís é a ordem inteligente do Synapse. Ele estima um estado emocional em duas dimensões, do sombrio ao alegre e do calmo ao agitado, e sorteia a próxima música dentro de uma sequência que nunca acaba.</p>
+    <p>A ordem é coerente, mas não fica presa: uma maré lenta muda o clima ao longo das horas, e quando a sessão passa tempo demais no mesmo lugar, o Metís procura uma região que você não visita há algum tempo.</p>
+
+    <h2>O que ele mede</h2>
+    <ul>
+      <li>Momento: data, hora, dia da semana, estação, feriado e luz do dia.</li>
+      <li>Lugar e clima: temperatura, chuva, nuvens, vento, umidade e se você está fora de casa.</li>
+      <li>Som: gênero, batidas, graves, agudos, pitch, tom, energia, dinâmica e duração.</li>
+      <li>Hábitos: vezes tocada, quando tocou, quanto foi ouvida, pulos, curtidas e o que veio antes e depois.</li>
+      <li>Intenção: o momento e o clima em que você escolheu uma música de propósito pesam mais.</li>
+      <li>Sessão: tempo ouvindo, profundidade da sessão, sequência de pulos, volume e aparelho.</li>
+    </ul>
+
+    <h2>Como ele aprende</h2>
+    <p>Uma rede neural pequena treina enquanto você ouve e tenta prever se a música vai até o fim. Junto dela, uma memória compara o momento atual com momentos parecidos do passado. Enquanto o histórico é pequeno, valem regras simples; a cada audição, o que você faz pesa mais do que as regras.</p>
+    <p>Nas músicas do YouTube, o navegador não tem acesso ao áudio. Por isso a análise usa a prévia de 30 segundos da mesma faixa no catálogo do iTunes, quando existe. Arquivos locais são analisados diretamente.</p>
+
+    <h2>Funções</h2>
+    <ul>
+      <li>Busca no YouTube, links de vídeos e playlists, e arquivos do aparelho.</li>
+      <li>Biblioteca salva com capa em baixa qualidade, título, artista e duração.</li>
+      <li>Playlists, fila, curtidas, repetição, aleatório clássico e busca na biblioteca.</li>
+      <li>Exportação e importação dos dados e do modelo.</li>
+      <li>Instalação como aplicativo no iPhone e no Windows, com abertura offline.</li>
+    </ul>
+
+    <h2>Instalar</h2>
+    <p>No iPhone, abra no Safari, toque em Compartilhar e escolha Adicionar à Tela de Início. No Windows, abra no Edge ou no Chrome e use o botão de instalar na barra de endereço.</p>
+  </main>
+  <footer><div><span>Synapse</span><span><a href="https://github.com/maxgfortes">GitHub do autor</a> · <a href="https://github.com/maxgfortes/synapse">Projeto</a></span></div></footer>
+</body>
+</html>

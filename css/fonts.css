@@ -1,0 +1,26 @@
+/* SF Pro embutida para quem nao tem a fonte no sistema, como no Windows.
+   Em aparelhos Apple, o sistema entrega os pesos finos que este arquivo nao tem. */
+
+@font-face {
+  font-family: "SF Pro";
+  font-weight: 100 400;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/SFPro-Regular.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "SF Pro";
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/SFPro-Medium.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "SF Pro";
+  font-weight: 600 900;
+  font-style: normal;
+  font-display: swap;
+  src: url("../assets/fonts/SFPro-Bold.woff2") format("woff2");
+}

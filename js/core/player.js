@@ -65,6 +65,10 @@ class Player {
     bus.on('engine:duration', (seconds) => this._onDuration(seconds));
     bus.on('engine:error', (code) => this._onError(code));
     bus.on('library', () => this._onLibraryChange());
+    bus.on('preview-saved', ({ id, track }) => {
+      if (this.current?.id === id) this.current = track;
+      bus.emit('player');
+    });
     this._bindMediaSession();
 
     const resume = saved.current && store.get(saved.current);

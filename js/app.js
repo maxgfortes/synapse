@@ -4,7 +4,7 @@ import { db } from './core/db.js';
 import { store } from './core/store.js';
 import { player } from './core/player.js';
 import { contextService } from './core/context.js';
-import { openAdd, runIntro, toast, ui } from './ui/shared.js';
+import { applyTheme, openAdd, runIntro, toast, ui } from './ui/shared.js';
 import { mountDesktop, unmountDesktop } from './ui/desktop.js';
 import { mountMobile, unmountMobile } from './ui/mobile.js';
 
@@ -64,6 +64,7 @@ function registerServiceWorker() {
 }
 
 async function start() {
+  applyTheme(await db.getKV('theme', 'blue'));
   await store.init();
   await contextService.init();
   await player.init();

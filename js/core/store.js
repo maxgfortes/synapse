@@ -42,6 +42,7 @@ class Store {
   constructor() {
     this.tracks = [];
     this.byId = new Map();
+    this.previews = new Map(); // ouvidas na busca, fora da biblioteca
     this.playlists = [];
     this.metis = null;
     this.saveTimer = null;
@@ -65,7 +66,45 @@ class Store {
   }
 
   get(id) {
-    return this.byId.get(id);
+    return this.byId.get(id) || this.previews.get(id);
+  }
+
+  isSaved(id) {
+    return this.byId.has(id);
+  }
+
+  // Faixa para ouvir sem salvar. Se a musica ja esta na biblioteca, usa ela.
+  preview(result) {
+    const saved = this.tracks.find((t) => t.sources?.yt === result.id) || this.findMatch(result);
+    if (saved) return saved;
+    const id = `yt_${result.id}`;
+    if (!this.previews.has(id)) {
+      this.previews.set(id, {
+        id,
+        title: result.title,
+        artist: result.artist,
+        album: '',
+        genre: '',
+        duration: result.duration || 0,
+        liked: false,
+        plays: 0,
+        skips: 0,
+        lastPlayed: 0,
+        url: `https://www.youtube.com/watch?v=${result.id}`,
+        cover: result.cover,
+        sources: { yt: result.id, local: false },
+        features: null,
+        preview: result,
+      });
+    }
+    return this.previews.get(id);
+  }
+
+  // Salva na biblioteca a musica que esta so sendo ouvida.
+  savePreview(id) {
+    const item = this.previews.get(id);
+    if (!item) return null;
+    return this.addYouTube({ ...item.preview, id: item.sources.yt, duration: item.duration });
   }
 
   saveMetis() {
@@ -89,6 +128,8 @@ class Store {
   }
 
   async update(id, patch) {
+    const preview = this.previews.get(id);
+    if (preview) return Object.assign(preview, patch);
     const track = this.byId.get(id);
     if (!track) return null;
     Object.assign(track, patch);
@@ -102,7 +143,14 @@ class Store {
 
   // Adiciona um resultado do YouTube. Se ja existir a mesma musica como arquivo
   // local, vincula as duas fontes em vez de duplicar.
-  async addYouTube(result, { silent = false } = {}) {
+  async addYouTube(result, options) {
+    const outcome = await this._addYouTube(result, options);
+    const previewId = `yt_${result.id}`;
+    if (this.previews.delete(previewId)) bus.emit('preview-saved', { id: previewId, track: outcome.track });
+    return outcome;
+  }
+
+  async _addYouTube(result, { silent = false } = {}) {
     const id = `yt_${result.id}`;
     if (this.byId.has(id)) return { track: this.byId.get(id), added: false };
     const existing = this.tracks.find((t) => t.sources?.yt === result.id);

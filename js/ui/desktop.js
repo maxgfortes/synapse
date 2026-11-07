@@ -196,7 +196,7 @@ function emptyLibrary() {
   return `<div class="empty">
     <div class="empty-logo">${logo}</div>
     <h2>Sua biblioteca está vazia</h2>
-    <p>Busque no YouTube, cole um link ou arraste arquivos de áudio para esta janela.</p>
+    <p>Busque músicas, cole um link ou arraste arquivos de áudio para esta janela.</p>
     <div class="empty-actions">
       <button type="button" class="btn btn-primary" data-tabgo="explore">Buscar músicas</button>
       <button type="button" class="btn" data-act="add">Adicionar links ou arquivos</button>
@@ -256,7 +256,7 @@ function exploreView() {
   return `<div class="explore">
     <form class="ex-form" id="ex-form">
       <h1>Explorar</h1>
-      <div class="ex-search">${icons.search}<input type="search" name="q" value="${esc(e.query)}" placeholder="Música, artista ou link do YouTube" aria-label="Buscar no YouTube" autocomplete="off"></div>
+      <div class="ex-search">${icons.search}<input type="search" name="q" value="${esc(e.query)}" placeholder="Música, artista ou link" aria-label="Buscar músicas" autocomplete="off"></div>
     </form>
     ${e.loading ? '<p class="ex-msg">Buscando...</p>' : ''}
     ${e.error ? `<p class="ex-msg">${esc(e.error)}</p>` : ''}
@@ -669,9 +669,12 @@ function onClick(event) {
   if (exAction) {
     const id = exAction.closest('[data-yt]').dataset.yt;
     const result = state.explore.results.find((r) => r.id === id);
-    store.addYouTube(result).then(({ track }) => {
-      if (exAction.dataset.ex === 'play') player.play(track.id, { intent: 'manual' });
-      else toast('Adicionada à biblioteca.');
+    if (exAction.dataset.ex === 'play') {
+      player.play(store.preview(result).id, { intent: 'manual' });
+      return;
+    }
+    store.addYouTube(result).then(() => {
+      toast('Adicionada à biblioteca.');
       if (state.route.view === 'explore') renderMain();
     });
     return;

@@ -44,7 +44,11 @@ a { color: var(--accent); }
 
 .top nav { display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 14px; }
 .top nav a { color: #3a3a3c; text-decoration: none; }
-.top nav a:hover, .top nav a[aria-current] { color: var(--accent); }
+.top nav a[aria-current] { color: var(--accent); }
+
+@media (hover: hover) {
+  .top nav a:hover { color: var(--accent); }
+}
 
 main { max-width: 760px; margin: 0 auto; padding: 34px 20px 56px; }
 

@@ -6,9 +6,9 @@ import { bus, escapeHtml as esc, formatTime } from '../core/bus.js';
 import { store } from '../core/store.js';
 import { player } from '../core/player.js';
 import { contextService } from '../core/context.js';
-import { searchYouTube } from '../core/youtube.js';
+import { clearRecentSearches, getRecentSearches, saveRecentSearch, searchYouTube } from '../core/youtube.js';
 import { fold } from '../metis/genres.js';
-import { icons, logo } from './icons.js';
+import { icons } from './icons.js';
 import {
   bindMetisPanel, confirmBox, cover, enrichStatus, genreLabel, html, isIOS, links, metisPanel, newPlaylist, openAdd,
   openPrefs, promptBox, showLargeCover, showMenu, toast, trackMenuItems,
@@ -24,12 +24,15 @@ const TABS = [
 
 const TITLES = { metis: 'Metís', playlists: 'Playlists', songs: 'Músicas', explore: 'Explorar', more: 'Mais' };
 const collator = new Intl.Collator('pt-BR', { sensitivity: 'base', numeric: true });
+const EQ = '<span class="eq" aria-hidden="true"><i></i><i></i><i></i></span>';
+const LOADING = '<div class="m-loading"><img src="assets/icons/loading.gif" alt="Carregando"></div>';
+const info = (text) => `<p class="m-info">${esc(text)}</p>`;
 
 const state = {
   tab: 'songs',
   stacks: { metis: [{ view: 'metis' }], playlists: [{ view: 'playlists' }], songs: [{ view: 'songs' }], explore: [{ view: 'explore' }], more: [{ view: 'more' }] },
   filter: '',
-  explore: { query: '', results: [], loading: false, error: '' },
+  explore: { query: '', results: [], loading: false, error: '', recents: [], ticket: 0 },
   nowOpen: false,
   nowTrack: null,
   seeking: false,
@@ -63,7 +66,7 @@ function setTab(tab) {
   }
   if (tab === state.tab) state.stacks[tab].length = 1;
   state.tab = tab;
-  render();
+  render('tab');
   $('.m-content').scrollTop = 0;
 }
 
@@ -98,7 +101,7 @@ const songCell = (t) => {
   return `<div class="cell song ${on ? 'cur' : ''}" data-song="${t.id}">
     ${cover(t, 'cell-art')}
     <div class="cell-text"><strong>${esc(t.title)}</strong><span>${esc([t.artist, t.album].filter(Boolean).join(' - '))}</span></div>
-    ${on ? `<span class="cell-now">${icons.speakerLow}</span>` : ''}
+    ${on ? EQ : ''}
     ${t.liked ? `<span class="cell-like">${icons.heartFill}</span>` : ''}
     <button type="button" class="cell-more" data-more="${t.id}" aria-label="Mais opções">${icons.more}</button>
   </div>`;
@@ -142,9 +145,7 @@ function songList(list, { sections = true } = {}) {
 
 function emptyState() {
   return `<div class="m-empty">
-    <div class="m-empty-logo">${logo}</div>
-    <h2>Nenhuma música ainda</h2>
-    <p>Busque no YouTube, cole um link ou escolha arquivos do aparelho.</p>
+    <p>Busque músicas, cole um link ou escolha arquivos do aparelho.</p>
     <button type="button" class="ios-btn" data-go="explore">Buscar músicas</button>
     <button type="button" class="ios-btn" data-do="add">Adicionar links ou arquivos</button>
   </div>`;
@@ -195,22 +196,25 @@ function view(route) {
         ${actionCell('delete-playlist', '', 'Apagar playlist', true)}`;
     }
     case 'liked':
-      return songList(store.tracks.filter((t) => t.liked), { sections: false }) || '<p class="m-count">Curta músicas para vê-las aqui.</p>';
+      return songList(store.tracks.filter((t) => t.liked), { sections: false }) || info('Curta músicas para vê-las aqui.');
     case 'recent':
       return songList(store.tracks.slice().sort((a, b) => b.addedAt - a.addedAt).slice(0, 60), { sections: false });
     case 'artists':
     case 'albums':
     case 'genres':
-      return groupsOf(GROUPS[route.view]).map(([name, list]) => navCell(`data-group="${route.view}" data-name="${esc(name)}"`, cover(list.find((t) => t.cover) || list[0], 'cell-art'), name, count(list.length))).join('') || '<p class="m-count">Nada por aqui ainda.</p>';
+      return groupsOf(GROUPS[route.view]).map(([name, list]) => navCell(`data-group="${route.view}" data-name="${esc(name)}"`, cover(list.find((t) => t.cover) || list[0], 'cell-art'), name, count(list.length))).join('') || info('Nada por aqui ainda.');
     case 'group': {
       const list = store.tracks.filter((t) => GROUPS[route.group](t) === route.name);
       return `${actionCell('list-metis', icons.metis, 'Tocar com Metís')}${songList(list, { sections: false })}`;
     }
     case 'explore': {
       const e = state.explore;
-      return `<form class="m-search-form" id="m-ex"><label class="m-search">${icons.search}<input type="search" name="q" value="${esc(e.query)}" placeholder="Música, artista ou link" aria-label="Buscar no YouTube" autocomplete="off"></label></form>
-        ${e.loading ? '<p class="m-count">Buscando...</p>' : ''}
-        ${e.error ? `<p class="m-count">${esc(e.error)}</p>` : ''}
+      const showRecents = !e.query && !e.loading && !e.error && e.recents.length;
+      return `<form class="m-search-form" id="m-ex"><label class="m-search">${icons.search}<input type="search" id="m-q" name="q" value="${esc(e.query)}" placeholder="Música, artista ou link" aria-label="Buscar músicas" autocomplete="off"></label></form>
+        ${e.loading ? LOADING : ''}
+        ${e.error ? info(e.error) : ''}
+        ${showRecents ? `<div class="recent-head"><h2>Recentes</h2><button type="button" data-do="clear-recents">Limpar</button></div>
+          ${e.recents.map((r, i) => `<div class="cell recent" data-recent="${i}">${icons.search}<div class="cell-text"><strong>${esc(r.query)}</strong><span>${count(r.results.length)}</span></div></div>`).join('')}` : ''}
         ${e.results.map((r) => {
     const saved = store.tracks.some((t) => t.sources?.yt === r.id);
     return `<div class="cell song" data-yt="${esc(r.id)}">
@@ -219,7 +223,7 @@ function view(route) {
           <button type="button" class="cell-add ${saved ? 'done' : ''}" data-ytadd aria-label="${saved ? 'Na biblioteca' : 'Adicionar'}" ${saved ? 'disabled' : ''}>${saved ? icons.check : icons.plus}</button>
         </div>`;
   }).join('')}
-        ${!e.results.length && !e.loading && !e.error ? '<p class="m-count">Busque no YouTube e salve músicas na sua biblioteca.</p>' : ''}`;
+        ${!e.results.length && !e.loading && !e.error && !showRecents ? info('Busque músicas e salve na sua biblioteca.') : ''}`;
     }
     case 'more': {
       const external = (href, icon, label, blank = true) => `<a class="cell nav" href="${href}" ${blank ? 'target="_blank" rel="noopener"' : ''}>${glyph(icon)}<div class="cell-text"><strong>${label}</strong></div><span class="cell-arrow">${icons.forward}</span></a>`;
@@ -277,7 +281,7 @@ function render(movement = '') {
   const focused = document.activeElement?.id;
   const caret = document.activeElement?.selectionStart;
   content.querySelectorAll('.m-view.out').forEach((old) => old.remove());
-  const previous = movement ? content.querySelector('.m-view') : null;
+  const previous = movement && movement !== 'tab' ? content.querySelector('.m-view') : null;
   const next = html(`<div class="m-view ${movement ? `in-${movement}` : ''}">${view(top())}</div>`);
   if (previous) {
     const offset = parseFloat(getComputedStyle(content).paddingTop) - content.scrollTop;
@@ -288,8 +292,8 @@ function render(movement = '') {
   } else {
     content.replaceChildren(next);
   }
-  if (focused === 'm-filter') {
-    const input = $('#m-filter');
+  if (focused === 'm-filter' || focused === 'm-q') {
+    const input = $(`#${focused}`);
     input?.focus();
     input?.setSelectionRange(caret, caret);
   }
@@ -352,6 +356,7 @@ function renderNow() {
 function syncNow() {
   const t = player.current;
   const panel = $('#now');
+  $('.ios').classList.toggle('is-playing', player.playing);
   if (!t || !panel.firstElementChild) return;
   panel.classList.toggle('paused', !player.playing);
   panel.querySelector('#now-title').textContent = t.title;
@@ -366,9 +371,12 @@ function syncNow() {
   }
 
   const like = panel.querySelector('#now-like');
-  like.classList.toggle('on', !!t.liked);
-  like.innerHTML = t.liked ? icons.heartFill : icons.heart;
-  like.setAttribute('aria-label', t.liked ? 'Remover curtida' : 'Curtir');
+  // Musica fora da biblioteca: no lugar de curtir, o botao adiciona.
+  const saved = store.isSaved(t.id);
+  like.dataset.do = saved ? 'like' : 'save-current';
+  like.classList.toggle('on', saved ? !!t.liked : true);
+  like.innerHTML = saved ? (t.liked ? icons.heartFill : icons.heart) : icons.plus;
+  like.setAttribute('aria-label', saved ? (t.liked ? 'Remover curtida' : 'Curtir') : 'Adicionar à biblioteca');
 
   const repeat = panel.querySelector('#mode-repeat');
   repeat.textContent = { off: 'Repetir', all: 'Repetir lista', one: 'Repetir música' }[player.repeat];
@@ -411,7 +419,7 @@ function openUpNext() {
   const body = html(`<div class="m-upnext">${rows.map((r, i) => `<div class="cell song" data-index="${i}">
     ${cover(r.track, 'cell-art')}
     <div class="cell-text"><strong>${esc(r.track.title)}</strong><span>${esc(r.entry?.reasons?.[0] || r.track.artist)}</span></div>
-  </div>`).join('') || '<p class="m-count">Nada na fila.</p>'}</div>`);
+  </div>`).join('') || info('Nada na fila.')}</div>`);
   const layer = html(`<div class="modal sheet"><div class="modal-card">
     <header class="modal-head"><h2>A seguir</h2></header><div class="modal-body"></div>
     <footer class="modal-foot"><button type="button" class="btn btn-primary">OK</button></footer>
@@ -461,6 +469,14 @@ async function action(name) {
     metis: () => player.toggleMetis(),
     shuffle: () => player.toggleShuffle(),
     like: () => store.toggleLike(player.current.id, contextService.now()),
+    'save-current': async () => {
+      await store.savePreview(player.current.id);
+      toast('Adicionada à biblioteca.');
+    },
+    'clear-recents': async () => {
+      state.explore.recents = await clearRecentSearches();
+      render();
+    },
     'metis-all': () => { player.pool = null; player.playList(store.tracks.map((t) => t.id), 'Biblioteca', { order: 'metis' }); openNow(); },
     'shuffle-all': () => { player.playList(store.tracks.map((t) => t.id), 'Biblioteca', { order: 'shuffle' }); openNow(); },
     'list-metis': () => { player.playList(currentIds(), listLabel(), { order: 'metis' }); openNow(); },
@@ -508,25 +524,35 @@ function onClick(event) {
     openNow();
     return undefined;
   }
+  const recent = t.closest('[data-recent]');
+  if (recent) {
+    const item = state.explore.recents[Number(recent.dataset.recent)];
+    state.explore.query = item.query;
+    state.explore.results = item.results;
+    render();
+    return undefined;
+  }
   const yt = t.closest('[data-yt]');
   if (yt) {
     const result = state.explore.results.find((r) => r.id === yt.dataset.yt);
     const adding = !!t.closest('[data-ytadd]');
-    store.addYouTube(result).then(({ track }) => {
-      if (adding) {
+    if (adding) {
+      store.addYouTube(result).then(() => {
         toast('Adicionada à biblioteca.');
         render();
-      } else {
-        player.play(track.id, { intent: 'manual' });
-        openNow();
-      }
-    });
+      });
+    } else {
+      player.play(store.preview(result).id, { intent: 'manual' });
+      openNow();
+    }
   }
   return undefined;
 }
 
 async function runSearch(query) {
   const e = state.explore;
+  // So a busca mais recente pode mostrar resultado.
+  const ticket = ++e.ticket;
   e.query = query;
   e.error = '';
   e.results = [];
@@ -539,9 +565,13 @@ async function runSearch(query) {
   e.loading = true;
   render();
   try {
-    e.results = await searchYouTube(query);
-    if (!e.results.length) e.error = 'Nada encontrado.';
+    const results = await searchYouTube(query);
+    if (ticket !== e.ticket) return undefined;
+    e.results = results;
+    if (results.length) e.recents = await saveRecentSearch(query, results);
+    else e.error = 'Nada encontrado.';
   } catch {
+    if (ticket !== e.ticket) return undefined;
     e.error = 'A busca não respondeu agora. Tente de novo ou cole um link.';
   }
   e.loading = false;
@@ -601,6 +631,11 @@ export function mountMobile(container) {
       state.filter = event.target.value;
       render();
     }
+    if (event.target.id === 'm-q' && !event.target.value && state.explore.query) {
+      state.explore.ticket++;
+      Object.assign(state.explore, { query: '', results: [], error: '', loading: false });
+      render();
+    }
   });
   root.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -610,6 +645,10 @@ export function mountMobile(container) {
     }
   });
   bindMetisPanel($('#content'));
+  getRecentSearches().then((list) => {
+    state.explore.recents = list;
+    if (top().view === 'explore') render();
+  });
   bindLongPress();
   bindSwipeDown();
 

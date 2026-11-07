@@ -61,7 +61,8 @@ for (const size of [192, 512]) {
 }
 shot('assets/icons/monochrome-512.png', 512, 512, `<div style="width:512px;height:512px;${center}">${mark(288, LIGHT)}</div>`);
 shot('assets/icons/favicon-32.png', 32, 32, rounded(32));
-shot('assets/icons/apple-touch-icon.png', 180, 180, bleed(180));
+// No iPhone o simbolo ocupa mais do icone.
+shot('assets/icons/apple-touch-icon.png', 180, 180, `<div style="width:180px;height:180px;background:${DARK};${center}">${mark(148, LIGHT)}</div>`);
 
 for (const [w, h] of [[1179, 2556], [1290, 2796], [1170, 2532], [1125, 2436], [750, 1334]]) {
   const size = Math.round(w * 0.3);

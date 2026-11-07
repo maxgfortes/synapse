@@ -5,6 +5,23 @@ import { CONFIG } from '../config.js';
 import { db } from './db.js';
 
 const API = 'https://www.googleapis.com/youtube/v3';
+const RECENT_LIMIT = 12;
+
+// Buscas recentes guardam os resultados: repetir uma nao gasta cota da API.
+export const getRecentSearches = () => db.getKV('recentSearches', []);
+
+export async function saveRecentSearch(query, results) {
+  const key = query.trim().toLowerCase();
+  const others = (await getRecentSearches()).filter((r) => r.query.trim().toLowerCase() !== key);
+  const list = [{ query: query.trim(), results }, ...others].slice(0, RECENT_LIMIT);
+  await db.setKV('recentSearches', list);
+  return list;
+}
+
+export async function clearRecentSearches() {
+  await db.setKV('recentSearches', []);
+  return [];
+}
 
 export function parseYouTubeId(input) {
   const text = String(input || '').trim();

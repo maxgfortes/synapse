@@ -14,6 +14,25 @@ import { GENRES } from '../metis/genres.js';
 import { icons, logo } from './icons.js';
 
 export const ui = { mode: 'desktop', install: null };
+
+// Cores do celular. on e a cor do texto sobre a cor do tema.
+export const THEMES = [
+  { id: 'blue', label: 'Azul', color: '#0a84ff', on: '#fff' },
+  { id: 'navy', label: 'Azul escuro', color: '#3355cc', on: '#fff' },
+  { id: 'orange', label: 'Laranja', color: '#f5820d', on: '#000' },
+  { id: 'white', label: 'Branco', color: '#ffffff', on: '#000' },
+  { id: 'pink', label: 'Rosa', color: '#e8336d', on: '#fff' },
+  { id: 'purple', label: 'Roxo', color: '#7c5ce0', on: '#fff' },
+  { id: 'green', label: 'Verde', color: '#2fb96a', on: '#000' },
+  { id: 'blush', label: 'Rosa claro', color: '#f7b8c8', on: '#000' },
+];
+
+export function applyTheme(id) {
+  const theme = THEMES.find((t) => t.id === id) || THEMES[0];
+  document.documentElement.style.setProperty('--tint', theme.color);
+  document.documentElement.style.setProperty('--on-tint', theme.on);
+  return theme;
+}
 export const isMobile = () => ui.mode === 'mobile';
 export const isStandalone = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
 export const isIOS = () => /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
@@ -242,6 +261,15 @@ export function showMenu(items, { x = 0, y = 0, title = '' } = {}) {
 
 export function trackMenuItems(ids, { playlistId = null } = {}) {
   const single = ids.length === 1 ? store.get(ids[0]) : null;
+  if (single && !store.isSaved(single.id)) {
+    return [{
+      label: 'Adicionar à biblioteca',
+      onClick: async () => {
+        await store.savePreview(single.id);
+        toast('Adicionada à biblioteca.');
+      },
+    }];
+  }
   const playlists = store.playlists.map((p) => ({ label: p.name, onClick: () => { store.addToPlaylist(p.id, ids); toast(`Adicionada a ${p.name}.`); } }));
   const items = [
     { label: 'Reproduzir', onClick: () => player.play(ids[0], { intent: 'manual' }) },
@@ -321,7 +349,7 @@ export function openAdd({ files: initialFiles = [], text = '' } = {}) {
       <span class="dz-text">Escolher arquivos de áudio</span>
     </button>
     <p class="hint">Se uma música vier nas duas formas, o Synapse junta as fontes: toca o arquivo local e mantém o link do YouTube como reserva.</p>
-    <div class="add-progress" hidden></div>
+    <div class="add-progress" hidden><img src="assets/icons/loading.gif" alt=""><span></span></div>
   </div>`);
   const textarea = body.querySelector('textarea');
   textarea.value = text;
@@ -365,8 +393,8 @@ export function openAdd({ files: initialFiles = [], text = '' } = {}) {
         onClick: async ({ el }) => {
           const urls = textarea.value.trim();
           if (!urls && !files.length) return true;
-          const progress = body.querySelector('.add-progress');
-          progress.hidden = false;
+          const progress = body.querySelector('.add-progress span');
+          body.querySelector('.add-progress').hidden = false;
           el.querySelectorAll('button').forEach((b) => { b.disabled = true; });
           const report = { added: 0, linked: 0, repeated: 0, failed: [], ids: [] };
           const merge = (r) => {
@@ -498,7 +526,11 @@ export async function openPrefs() {
   const metis = store.metis;
   const adventure = Math.round(metis.settings.adventure * 100);
   const canInstall = !!ui.install;
+  const currentTheme = await db.getKV('theme', 'blue');
+  const themePicker = isMobile() ? `<h3>Cor do tema</h3>
+    <div class="swatches" role="radiogroup" aria-label="Cor do tema">${THEMES.map((t) => `<button type="button" class="swatch" role="radio" data-theme="${t.id}" aria-checked="${t.id === currentTheme}"><i style="background:${t.color};color:${t.on}">${icons.check}</i>${esc(t.label)}</button>`).join('')}</div>` : '';
   const body = html(`<div class="prefs">
+    ${themePicker}
     <h3>Metís</h3>
     <label class="field-label">Aventura <output>${adventure}%</output>
       <input type="range" name="adventure" min="0" max="100" value="${adventure}">
@@ -543,6 +575,13 @@ export async function openPrefs() {
     }
   });
   body.addEventListener('click', async (event) => {
+    const swatch = event.target.closest('[data-theme]');
+    if (swatch) {
+      applyTheme(swatch.dataset.theme);
+      db.setKV('theme', swatch.dataset.theme);
+      body.querySelectorAll('[data-theme]').forEach((b) => b.setAttribute('aria-checked', b === swatch));
+      return;
+    }
     const action = event.target.closest('[data-do]')?.dataset.do;
     if (!action) return;
     if (action === 'export-all') exportBackup('all');
@@ -590,7 +629,7 @@ const INTRO = [
   },
   {
     title: 'Monte sua biblioteca',
-    text: 'Busque no YouTube, cole links ou adicione arquivos do aparelho. Cada música fica salva com capa, título, artista e duração.',
+    text: 'Busque músicas, cole links ou adicione arquivos do aparelho. Cada música fica salva com capa, título, artista e duração.',
   },
   {
     title: 'Conheça o Metís',
@@ -675,7 +714,7 @@ function compass(snapshot) {
   }).join('');
   const path = snapshot.trail.slice(-12).map((p, i) => `${i ? 'L' : 'M'}${px(p.v).toFixed(1)} ${py(p.a).toFixed(1)}`).join(' ');
   return `<svg class="compass" viewBox="0 0 ${size} ${size}" role="img" aria-label="Clima atual: ${esc(snapshot.mood.label)}. Alvo: ${esc(snapshot.target.label)}.">
-    <rect x="12" y="12" width="${size - 24}" height="${size - 24}" rx="6" fill="var(--compass-bg)" stroke="var(--line)"/>
+    <rect x="12" y="12" width="${size - 24}" height="${size - 24}" rx="8" fill="var(--compass-bg)" stroke="var(--line)"/>
     <path d="M${size / 2} 12V${size - 12}M12 ${size / 2}H${size - 12}" stroke="var(--line)"/>
     <text x="${size / 2}" y="26" text-anchor="middle">Agitado</text>
     <text x="${size / 2}" y="${size - 18}" text-anchor="middle">Calmo</text>

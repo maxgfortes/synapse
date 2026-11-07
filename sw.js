@@ -1,6 +1,6 @@
 // Service worker: abre offline e atualiza em segundo plano.
 
-const VERSION = 'synapse-v4';
+const VERSION = 'synapse-v9';
 const THUMBS = 'synapse-thumbs-v1';
 
 const SHELL = [
@@ -14,7 +14,7 @@ const SHELL = [
   'js/metis/math.js', 'js/metis/nn.js',
   'js/ui/desktop.js', 'js/ui/icons.js', 'js/ui/mobile.js', 'js/ui/shared.js',
   'assets/icons/icon.svg', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png', 'assets/icons/favicon-32.png',
-  'assets/icons/apple-touch-icon.png',
+  'assets/icons/apple-touch-icon.png', 'assets/icons/loading.gif',
 ];
 
 self.addEventListener('install', (event) => {

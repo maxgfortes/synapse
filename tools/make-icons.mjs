@@ -42,7 +42,7 @@ const MAP = {
   person: 'person',
   gear: 'gear',
   globe: 'globe',
-  metis: 'sparkles',
+  metis: 'wand.and.stars',
 };
 
 const shortNumber = (text) => text.replace(/-?\d+\.\d+/g, (n) => String(Math.round(Number(n) * 100) / 100));

@@ -2,7 +2,7 @@
 
 export const CONFIG = {
   name: 'Synapse',
-  version: '1.2.0',
+  version: '1.3.0',
   siteUrl: 'https://maxgfortes.github.io/synapse/',
   githubProfile: 'https://github.com/maxgfortes',
   githubRepo: 'https://github.com/maxgfortes/synapse',

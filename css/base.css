@@ -17,18 +17,19 @@ html.ui-mobile {
   --accent: var(--tint);
   --accent-strong: var(--tint);
   --text: #fff;
-  --muted: #8e8e93;
-  --label: #8e8e93;
+  --muted: #999;
+  --label: #999;
   --faint: #48484a;
+  --on-tint: #fff;
   --sep: #2c2c2e;
   --line: #2c2c2e;
   --bg: #000;
-  --bar: #111113;
-  --section: #1c1c1e;
+  --bar: var(--bg);
+  --section: var(--bg);
   --raised: #1c1c1e;
   --search: #1c1c1e;
   --pressed: #2c2c2e;
-  --backdrop: #000;
+  --backdrop: rgba(0, 0, 0, .6);
   --compass-bg: #1c1c1e;
   --danger: #ff453a;
   color-scheme: dark;
@@ -79,6 +80,7 @@ ul, ol { list-style: none; }
 #boot h1 { font-size: 28px; font-weight: 300; }
 #boot p { max-width: 42ch; color: var(--muted); }
 #boot nav { display: flex; gap: 16px; margin-top: 8px; }
+#boot img { width: 44px; height: 44px; margin-top: 8px; }
 
 @media (max-width: 820px) {
   html, body, #boot { background: #000; color: #fff; }
@@ -166,12 +168,12 @@ ul, ol { list-style: none; }
   box-shadow: 0 0 0 .5px rgba(0, 0, 0, .28), 0 .5px 1px rgba(0, 0, 0, .1);
   white-space: nowrap;
 }
-.btn:hover:not(:disabled) { background: linear-gradient(#fff, #e8e8ea); }
-.btn:active:not(:disabled) { background: #dedee0; }
+.ui-desktop .btn:hover:not(:disabled) { background: linear-gradient(#fff, #e8e8ea); }
+.ui-desktop .btn:active:not(:disabled) { background: #dedee0; }
 .btn:disabled { opacity: .5; }
 .btn-primary { background: linear-gradient(#2e97ff, #0a78ee); color: #fff; box-shadow: 0 0 0 .5px rgba(0, 60, 150, .6); }
-.btn-primary:hover:not(:disabled) { background: linear-gradient(#45a3ff, #1a84f4); }
-.btn-primary:active:not(:disabled) { background: #0a6fdc; }
+.ui-desktop .btn-primary:hover:not(:disabled) { background: linear-gradient(#45a3ff, #1a84f4); }
+.ui-desktop .btn-primary:active:not(:disabled) { background: #0a6fdc; }
 .btn-danger { color: #d70015; }
 
 .link { color: var(--accent-strong); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; }
@@ -206,7 +208,8 @@ ul, ol { list-style: none; }
   cursor: pointer;
 }
 .dropzone.over { border-color: var(--accent); background: #eaf3ff; }
-.add-progress { margin-top: 10px; color: var(--muted); }
+.add-progress { display: flex; align-items: center; gap: 8px; margin-top: 10px; color: var(--muted); }
+.add-progress img { width: 18px; height: 18px; }
 
 .info-top { display: flex; align-items: center; gap: 12px; margin-bottom: 4px; }
 .info-top strong, .info-top span { display: block; }
@@ -246,13 +249,13 @@ ul, ol { list-style: none; }
   text-align: left;
   white-space: nowrap;
 }
-.menu-item:hover:not(:disabled) { background: var(--accent-strong); color: #fff; }
+.ui-desktop .menu-item:hover:not(:disabled) { background: var(--accent-strong); color: #fff; }
 .menu-item:disabled { color: #a7a7ab; }
 .menu-item.danger { color: #d70015; }
-.menu-item.danger:hover { color: #fff; }
+.ui-desktop .menu-item.danger:hover { color: #fff; }
 .menu-item.checked::before { content: ""; position: absolute; left: 9px; top: 50%; width: 5px; height: 9px; margin-top: -6px; border: solid currentColor; border-width: 0 1.5px 1.5px 0; transform: rotate(40deg); }
 .menu-item kbd { color: #8a8a8e; font: inherit; font-size: 12px; }
-.menu-item:hover kbd { color: inherit; }
+.ui-desktop .menu-item:hover kbd { color: inherit; }
 .menu-arrow { border-left: 5px solid currentColor; border-top: 4px solid transparent; border-bottom: 4px solid transparent; }
 .menu-sep { height: 1px; margin: 4px 0; background: #dedee0; }
 
@@ -303,7 +306,7 @@ ul, ol { list-style: none; }
 .why li { color: #4c4c50; font-size: 12px; }
 .why li::before { content: ""; display: inline-block; width: 4px; height: 4px; margin: 0 6px 2px 0; border-radius: 50%; background: var(--accent); }
 .metis-queue li { display: flex; align-items: center; gap: 10px; padding: 5px 4px; border-bottom: 1px solid #ededef; cursor: pointer; }
-.metis-queue li:hover { background: #f5f5f7; }
+.ui-desktop .metis-queue li:hover { background: #f5f5f7; }
 .metis-queue strong, .metis-queue span { display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .metis-queue span { color: var(--muted); font-size: 12px; }
 .metis-queue div { flex: 1; min-width: 0; }

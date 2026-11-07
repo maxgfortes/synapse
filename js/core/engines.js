@@ -69,9 +69,9 @@ export class YouTubeEngine {
     if (this.ready) return this.ready;
     this.ready = loadYouTubeApi().then((YT) => new Promise((resolve) => {
       this.player = new YT.Player('yt-frame', {
-        width: '100%',
-        height: '100%',
-        playerVars: { playsinline: 1, controls: 0, disablekb: 1, rel: 0, fs: 0, modestbranding: 1, iv_load_policy: 3 },
+        width: 200,
+        height: 200,
+        playerVars: { playsinline: 1, controls: 0, disablekb: 1, fs: 0, rel: 0 },
         events: {
           onReady: () => {
             this.player.setVolume(Math.round(this.volume * 100));

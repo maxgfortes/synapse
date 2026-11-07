@@ -572,6 +572,54 @@ export async function resumeSpotifyLogin() {
   }
 }
 
+const LOCATION_HELP = {
+  denied: () => (isIOS()
+    ? 'O iPhone bloqueou a localização. Abra Ajustes, Privacidade e Segurança, Serviços de Localização. Ative o serviço, toque em Sites do Safari e escolha Durante o Uso. Depois tente de novo.'
+    : 'O navegador bloqueou a localização. Libere nas permissões deste site e tente de novo.'),
+  unavailable: () => 'Não deu para achar sua posição agora. Confira se os Serviços de Localização estão ativos e tente de novo.',
+  insecure: () => 'A localização só funciona em endereço https.',
+  unsupported: () => 'Este navegador não oferece localização.',
+};
+
+export async function enableLocation() {
+  const result = await contextService.requestLocation();
+  if (result === 'granted') {
+    toast(contextService.place?.city ? `Localização ativa: ${contextService.place.city}.` : 'Localização ativa.');
+    return true;
+  }
+  return new Promise((done) => {
+    let approximate = false;
+    openModal({
+      title: 'Localização não liberada',
+      className: 'alert',
+      body: `<p>${esc(LOCATION_HELP[result]())}</p>`,
+      buttons: [
+        { label: 'Fechar' },
+        {
+          label: 'Usar cidade aproximada',
+          primary: true,
+          onClick: async () => {
+            approximate = await contextService.useApproximateLocation();
+            toast(approximate ? 'Usando sua cidade aproximada.' : 'Não foi possível achar sua cidade.');
+          },
+        },
+      ],
+      onClose: () => done(approximate),
+    });
+  });
+}
+
+const ASK_AGAIN = 7 * 864e5;
+
+export async function promptLocation() {
+  if (contextService.located) return;
+  const asked = await db.getKV('geoAskedAt', 0);
+  if (Date.now() - asked < ASK_AGAIN) return;
+  await db.setKV('geoAskedAt', Date.now());
+  const accepted = await confirmBox('Usar o clima da sua região?', 'A localização serve para consultar o tempo lá fora e deixar a ordem do Metís mais certa.', { confirm: 'Permitir' });
+  if (accepted) await enableLocation();
+}
+
 export async function openPrefs() {
   const key = await db.getKV('ytKey', '');
   const metis = store.metis;
@@ -589,9 +637,9 @@ export async function openPrefs() {
     <p class="hint">Mais baixo: fica perto do que você já ouve. Mais alto: muda de clima mais vezes e arrisca mais.</p>
     <div class="switch-row">
       <span>Usar localização e clima</span>
-      <button type="button" class="btn" data-geo>${contextService.consent === 'granted' ? 'Desativar' : 'Ativar'}</button>
+      <button type="button" class="btn" data-geo>${contextService.located ? 'Desativar' : 'Ativar'}</button>
     </div>
-    <p class="hint">${contextService.consent === 'granted' ? `Ativo${contextService.place?.city ? `: ${esc(contextService.place.city)}` : ''}. Coordenadas arredondadas em cerca de 10 km.` : 'Sem localização, o Metís usa só data, hora e o que você ouve.'}</p>
+    <p class="hint">${contextService.located ? `Ativo${contextService.place?.city ? `: ${esc(contextService.place.city)}` : ''}. Coordenadas arredondadas em cerca de 10 km.` : 'Sem localização, o Metís usa só data, hora e o que você ouve.'}</p>
 
     <h3>YouTube</h3>
     <label class="field-label">Chave própria da YouTube Data API (opcional)
@@ -617,13 +665,12 @@ export async function openPrefs() {
   });
   body.querySelector('[data-geo]').addEventListener('click', async (event) => {
     const button = event.currentTarget;
-    if (contextService.consent === 'granted') {
+    if (contextService.located) {
       await contextService.setConsent('denied');
       button.textContent = 'Ativar';
     } else {
-      const ok = await contextService.requestLocation();
+      const ok = await enableLocation();
       button.textContent = ok ? 'Desativar' : 'Ativar';
-      if (!ok) toast('Localização não permitida.');
     }
   });
   body.addEventListener('click', async (event) => {
@@ -730,11 +777,12 @@ export function runIntro() {
           : '';
         content.innerHTML = `<h2>Usar o clima da sua região?</h2><p>A localização serve para consultar o tempo lá fora e fica neste aparelho, arredondada em cerca de 10 km. Você pode mudar isso depois.</p>${installHint}`;
         button('Agora não', false, async () => {
-          await contextService.setConsent('denied');
+          await db.setKV('geoAskedAt', Date.now());
           finish();
         });
         button('Permitir', true, async () => {
-          await contextService.requestLocation();
+          await db.setKV('geoAskedAt', Date.now());
+          await enableLocation();
           finish();
         });
       }
@@ -808,7 +856,7 @@ export function metisPanel() {
       <p class="metis-sub">Indo para ${esc(snap.target.label)}${snap.target.urge > 0.3 ? ', para sair do mesmo clima' : ''}</p>
       ${compass(snap)}
       <ul class="chips">${contextChips().map((c) => `<li>${esc(c)}</li>`).join('')}</ul>
-      ${contextService.consent !== 'granted' ? '<button type="button" class="link" data-action="enable-geo">Usar o clima da minha região</button>' : ''}
+      ${!contextService.located ? '<button type="button" class="link" data-action="enable-geo">Usar o clima da minha região</button>' : ''}
     </section>
     <section class="metis-next">
       ${current && reasons.length ? `<h3>Por que esta música</h3>
@@ -831,7 +879,7 @@ export function bindMetisPanel(root) {
     const target = event.target.closest('[data-action]');
     if (!target) return;
     if (target.dataset.action === 'enable-geo') {
-      if (!(await contextService.requestLocation())) toast('Localização não permitida.');
+      await enableLocation();
     }
     if (target.dataset.action === 'jump') {
       const rows = player.upcoming(6).filter((r) => r.kind === 'metis');

@@ -9,6 +9,10 @@ export const WEATHER_LABEL = {
   clear: 'Céu limpo', cloudy: 'Nublado', fog: 'Neblina', rain: 'Chuva', storm: 'Tempestade', snow: 'Neve',
 };
 
+const locate = (options) => new Promise((resolve, reject) => {
+  navigator.geolocation.getCurrentPosition(resolve, reject, options);
+});
+
 class ContextService {
   constructor() {
     this.weather = null;
@@ -20,6 +24,10 @@ class ContextService {
     this.history = { temps: [] };
   }
 
+  get located() {
+    return this.consent === 'granted' || this.consent === 'approximate';
+  }
+
   async init() {
     this.consent = await db.getKV('geoConsent', 'unset');
     this.place = await db.getKV('place', null);
@@ -27,29 +35,45 @@ class ContextService {
     this.holidays = await db.getKV('holidays', {});
     this.history = await db.getKV('weatherHistory', { temps: [] });
     this.home = await db.getKV('homePlaces', {});
-    if (this.consent === 'granted') this.refresh();
+    if (this.located) this.refresh();
     setInterval(() => this.refresh(), WEATHER_TTL);
   }
 
   async requestLocation() {
-    if (!navigator.geolocation) {
-      await this.setConsent('denied');
+    if (!window.isSecureContext) return 'insecure';
+    if (!navigator.geolocation) return 'unsupported';
+    const attempts = [
+      { maximumAge: 30 * 6e4, timeout: 12000, enableHighAccuracy: false },
+      { maximumAge: 0, timeout: 20000, enableHighAccuracy: true },
+    ];
+    let code = 0;
+    for (const options of attempts) {
+      try {
+        const position = await locate(options);
+        await this.setConsent('granted');
+        await this._applyPosition(position.coords.latitude, position.coords.longitude);
+        return 'granted';
+      } catch (error) {
+        code = error.code;
+        if (code === 1) break;
+      }
+    }
+    if (code !== 1) return 'unavailable';
+    await this.setConsent('denied');
+    return 'denied';
+  }
+
+  async useApproximateLocation() {
+    try {
+      const response = await fetch('https://ipwho.is/?fields=success,latitude,longitude');
+      const data = await response.json();
+      if (!data.success) return false;
+      await this.setConsent('approximate');
+      await this._applyPosition(data.latitude, data.longitude);
+      return true;
+    } catch {
       return false;
     }
-    return new Promise((resolve) => {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          await this.setConsent('granted');
-          await this._applyPosition(position.coords.latitude, position.coords.longitude);
-          resolve(true);
-        },
-        async () => {
-          await this.setConsent('denied');
-          resolve(false);
-        },
-        { maximumAge: 30 * 6e4, timeout: 12000, enableHighAccuracy: false },
-      );
-    });
   }
 
   async setConsent(value) {
@@ -88,6 +112,10 @@ class ContextService {
   }
 
   async refresh() {
+    if (this.consent === 'approximate') {
+      this._fetchWeather();
+      return;
+    }
     if (this.consent !== 'granted' || !navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       (p) => this._applyPosition(p.coords.latitude, p.coords.longitude),

@@ -2,7 +2,7 @@ import { db } from './core/db.js';
 import { store } from './core/store.js';
 import { player } from './core/player.js';
 import { contextService } from './core/context.js';
-import { applyTheme, openAdd, resumeSpotifyLogin, runIntro, toast, ui } from './ui/shared.js';
+import { applyTheme, openAdd, promptLocation, resumeSpotifyLogin, runIntro, toast, ui } from './ui/shared.js';
 import { mountDesktop, unmountDesktop } from './ui/desktop.js';
 import { mountMobile, unmountMobile } from './ui/mobile.js';
 
@@ -70,6 +70,7 @@ async function start() {
   if (!(await db.getKV('introDone', false))) await runIntro();
   handleLaunch();
   resumeSpotifyLogin();
+  promptLocation();
   registerServiceWorker();
 
   document.addEventListener('visibilitychange', () => {

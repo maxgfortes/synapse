@@ -28,7 +28,7 @@ Ao publicar uma versão nova, aumente `VERSION` em `sw.js`. Para refazer imagens
 
 A busca usa a YouTube Data API v3 com a chave de `js/config.js` ou a salva em Preferências. A chave de `js/config.js` fica visível no código do site, então deve estar restrita por domínio no Google Cloud. Cada busca gasta 100 unidades de uma cota diária de 10.000, ou seja, cerca de 100 buscas por dia para todos os usuários somados. Quando a cota acaba, a busca passa para um espelho público (Piped), que pode sair do ar. Cada usuário também pode colar a própria chave em Preferências.
 
-A API entrega busca e metadados, não o áudio. O áudio vem do player oficial do YouTube, que fica atrás da interface: o usuário só vê o player do Synapse. Se um vídeo estiver bloqueado para reprodução externa ou tiver sido removido, o app procura outra versão da mesma música e troca sozinho, gastando mais 100 unidades.
+A API entrega busca e metadados, não o áudio. O áudio vem do player oficial do YouTube, que fica fora da tela: o usuário só vê o player do Synapse. Se um vídeo estiver bloqueado para reprodução externa ou tiver sido removido, o app procura outra versão da mesma música e troca sozinho, gastando mais 100 unidades.
 
 Colar links funciona sempre.
 

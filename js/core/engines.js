@@ -59,31 +59,71 @@ function loadYouTubeApi() {
 export class YouTubeEngine {
   constructor() {
     this.player = null;
-    this.ready = null;
+    this.holder = null;
     this.timer = null;
+    this.startCheck = null;
     this.isPlaying = false;
     this.volume = 0.8;
   }
 
-  async _ensure() {
-    if (this.ready) return this.ready;
-    this.ready = loadYouTubeApi().then((YT) => new Promise((resolve) => {
-      this.player = new YT.Player('yt-frame', {
-        width: 200,
-        height: 200,
-        playerVars: { playsinline: 1, controls: 0, disablekb: 1, fs: 0, rel: 0 },
-        events: {
-          onReady: () => {
-            this.player.setVolume(Math.round(this.volume * 100));
-            resolve(this.player);
-          },
-          onStateChange: (event) => this._onState(event.data),
-          onError: (event) => bus.emit('engine:error', `youtube:${event.data}`),
+  _getHolder() {
+    if (!this.holder) {
+      this.holder = document.createElement('div');
+      this.holder.setAttribute('aria-hidden', 'true');
+      this.holder.style.cssText = 'position: absolute; left: -9999px; top: 0; width: 200px; height: 200px; overflow: hidden; pointer-events: none;';
+      document.body.appendChild(this.holder);
+    }
+    return this.holder;
+  }
+
+  _destroy() {
+    this._stopTick();
+    clearTimeout(this.startCheck);
+    this.isPlaying = false;
+    const current = this.player;
+    this.player = null;
+    try {
+      current?.destroy();
+    } catch { }
+    if (this.holder) this.holder.innerHTML = '';
+  }
+
+  async load(videoId, startAt = 0) {
+    const YT = await loadYouTubeApi();
+    this._destroy();
+    const mount = document.createElement('div');
+    this._getHolder().appendChild(mount);
+    const player = new YT.Player(mount, {
+      videoId,
+      width: 200,
+      height: 200,
+      playerVars: { playsinline: 1, controls: 0, disablekb: 1, fs: 0, rel: 0, modestbranding: 1 },
+      events: {
+        onReady: () => {
+          if (this.player !== player) return;
+          player.setVolume(Math.round(this.volume * 100));
+          if (startAt) player.seekTo(startAt, true);
+          player.playVideo();
+          this._watchStart(player);
         },
-      });
-    }));
-    this.ready.catch(() => { this.ready = null; });
-    return this.ready;
+        onStateChange: (event) => {
+          if (this.player === player) this._onState(event.data);
+        },
+        onError: (event) => {
+          if (this.player === player) bus.emit('engine:error', `youtube:${event.data}`);
+        },
+      },
+    });
+    this.player = player;
+  }
+
+  _watchStart(player) {
+    clearTimeout(this.startCheck);
+    this.startCheck = setTimeout(() => {
+      if (this.player !== player || this.isPlaying) return;
+      if (player.getPlayerState?.() === window.YT.PlayerState.BUFFERING) return;
+      bus.emit('engine:blocked');
+    }, 3500);
   }
 
   _onState(state) {
@@ -114,19 +154,10 @@ export class YouTubeEngine {
     this.timer = null;
   }
 
-  async load(videoId, startAt = 0) {
-    const player = await this._ensure();
-    player.loadVideoById({ videoId, startSeconds: startAt });
-  }
-
-  play() { this.player?.playVideo(); }
-  pause() { this.player?.pauseVideo(); }
-  stop() {
-    this._stopTick();
-    this.isPlaying = false;
-    this.player?.stopVideo?.();
-  }
-  seek(seconds) { this.player?.seekTo(seconds, true); }
+  play() { this.player?.playVideo?.(); }
+  pause() { this.player?.pauseVideo?.(); }
+  stop() { this._destroy(); }
+  seek(seconds) { this.player?.seekTo?.(seconds, true); }
   setVolume(value) {
     this.volume = value;
     this.player?.setVolume?.(Math.round(value * 100));

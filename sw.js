@@ -1,4 +1,4 @@
-const VERSION = 'synapse-v13';
+const VERSION = 'synapse-v14';
 const THUMBS = 'synapse-thumbs-v1';
 
 const SHELL = [

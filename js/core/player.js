@@ -61,6 +61,11 @@ class Player {
     bus.on('engine:ended', () => this._onEnded());
     bus.on('engine:duration', (seconds) => this._onDuration(seconds));
     bus.on('engine:error', (code) => this._onError(code));
+    bus.on('engine:blocked', () => {
+      this.playing = false;
+      bus.emit('player');
+      bus.emit('toast', 'Toque em reproduzir para continuar.');
+    });
     bus.on('library', () => this._onLibraryChange());
     bus.on('preview-saved', ({ id, track }) => {
       if (this.current?.id === id) this.current = track;
@@ -191,7 +196,6 @@ class Player {
     const target = useLocal ? this.audio : this.youtube;
     if (this.engine && this.engine !== target) this.engine.stop();
     this.engine = target;
-    document.getElementById('yt-host').className = useLocal ? 'yt-hidden' : '';
     this.applyVolume();
     bus.emit('player', { trackChanged: true });
     this._updateMediaSession();

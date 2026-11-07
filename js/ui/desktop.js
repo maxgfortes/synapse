@@ -1,5 +1,3 @@
-// Interface de desktop: janela no estilo iTunes 12.
-
 import { CONFIG } from '../config.js';
 import { bus, escapeHtml as esc, formatDate, formatSize, formatTime, formatTotal } from '../core/bus.js';
 import { store } from '../core/store.js';
@@ -9,7 +7,7 @@ import { searchYouTube } from '../core/youtube.js';
 import { icons, logo } from './icons.js';
 import {
   bindMetisPanel, confirmBox, cover, enrichStatus, exportBackup, genreLabel, importBackup, links, metisPanel,
-  newPlaylist, openAdd, openInfo, openPrefs, promptBox, showLargeCover, showMenu, toast, trackMenuItems, ui,
+  newPlaylist, openAdd, openInfo, openPrefs, openSpotifyImport, promptBox, showLargeCover, showMenu, toast, trackMenuItems, ui,
 } from './shared.js';
 
 const COLUMNS = [
@@ -402,6 +400,7 @@ function menuItems(name) {
       { label: 'Exportar biblioteca e ML...', onClick: () => exportBackup('all') },
       { label: 'Exportar só o ML...', onClick: () => exportBackup('ml') },
       { label: 'Importar...', onClick: () => importBackup() },
+      { label: 'Importar do Spotify...', onClick: openSpotifyImport },
       '-',
       { label: 'Instalar o Synapse', disabled: !ui.install, onClick: () => ui.install?.prompt() },
     ];

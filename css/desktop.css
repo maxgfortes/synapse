@@ -1,5 +1,3 @@
-/* Janela de desktop no estilo iTunes 12. */
-
 .ui-desktop body { user-select: none; -webkit-user-select: none; }
 .ui-desktop input, .ui-desktop textarea, .ui-desktop .modal-body p, .ui-desktop .page { user-select: text; -webkit-user-select: text; }
 
@@ -11,7 +9,6 @@
   min-width: 821px;
 }
 
-/* Barra superior. Com window-controls-overlay, os botoes de janela ficam aqui. */
 .dt-toolbar {
   display: grid;
   grid-template-columns: minmax(180px, 1fr) minmax(320px, 2.3fr) minmax(220px, 1fr);
@@ -57,7 +54,6 @@
 }
 .dt-volume::-moz-range-thumb { width: 13px; height: 13px; border: 0; border-radius: 50%; background: #fbfbfb; box-shadow: 0 0 0 .5px rgba(0, 0, 0, .35), 0 1px 2px rgba(0, 0, 0, .3); }
 
-/* LCD central. */
 .dt-lcd {
   position: relative;
   display: flex;
@@ -137,12 +133,10 @@
 .dt-search input { flex: 1; min-width: 0; height: 100%; padding: 0 6px; border: 0; background: none; outline: 0; font-size: 12px; }
 .dt-search:focus-within { box-shadow: 0 0 0 1.5px var(--accent); }
 
-/* Menu. */
 .dt-menubar { display: flex; height: 22px; padding: 0 6px; background: #fbfbfb; border-bottom: 1px solid #e0e0e0; }
 .dt-menubar button { padding: 0 7px; font-size: 12px; line-height: 21px; }
 .dt-menubar button:hover { background: #d9e9fb; }
 
-/* Linha de navegacao. */
 .dt-nav {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -193,7 +187,6 @@
 .dt-add svg { font-size: 14px; }
 .dt-add:hover { background: #eef3fb; color: var(--accent-strong); }
 
-/* Corpo. */
 .dt-body { position: relative; display: flex; min-height: 0; background: #fff; }
 
 .dt-side {
@@ -223,7 +216,6 @@
 
 .dt-main { position: relative; display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
 
-/* Tabela. */
 .tbl-wrap { flex: 1; min-height: 0; overflow: auto; }
 .tbl { width: 100%; min-width: 860px; border-collapse: collapse; table-layout: fixed; font-size: 12px; }
 .tbl thead th {
@@ -276,7 +268,6 @@ td.c-src svg { width: 15px; height: 15px; margin: 0 auto; color: #8d8d91; }
 tr:hover .heart { color: #a3a3a7; }
 .heart.on, tr:hover .heart.on { color: var(--accent-strong); }
 
-/* Grades. */
 .grid-view {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -290,7 +281,6 @@ tr:hover .heart { color: #a3a3a7; }
 .grid-item strong { margin-top: 6px; font-size: 12px; font-weight: 500; }
 .grid-item span { color: var(--muted); font-size: 12px; }
 
-/* Lista mestre e detalhe. */
 .md { display: flex; flex: 1; min-height: 0; }
 .md-list { flex: 0 0 230px; overflow-y: auto; border-right: 1px solid #e4e4e4; background: #fdfdfd; }
 .md-item { display: flex; align-items: center; gap: 8px; width: 100%; height: 46px; padding: 3px 10px; text-align: left; }
@@ -308,7 +298,6 @@ tr:hover .heart { color: #a3a3a7; }
 .md-head p { color: var(--muted); font-size: 12px; }
 .md-actions { display: flex; gap: 8px; margin-top: 8px; }
 
-/* A seguir. */
 .dt-upnext {
   position: absolute;
   top: 0;
@@ -336,7 +325,6 @@ tr:hover .heart { color: #a3a3a7; }
 .up-empty { color: var(--muted); cursor: default !important; }
 .up-x { display: grid; place-items: center; width: 18px; height: 18px; color: #8d8d91; font-size: 12px; }
 
-/* Explorar e paginas. */
 .explore { flex: 1; min-height: 0; padding: 22px 26px; overflow-y: auto; }
 .ex-form h1 { margin-bottom: 12px; font-size: 24px; font-weight: 300; }
 .ex-search { display: flex; align-items: center; gap: 8px; height: 32px; max-width: 560px; padding: 0 10px; border-radius: 5px; background: #fff; box-shadow: 0 0 0 .5px rgba(0, 0, 0, .35), inset 0 1px 1px rgba(0, 0, 0, .05); color: #777; font-size: 15px; }

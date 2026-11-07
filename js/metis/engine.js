@@ -1,13 +1,3 @@
-// Metis: estima o estado emocional do ouvinte no plano valencia/excitacao e
-// sorteia a proxima musica. Cinco pecas trabalham juntas:
-//   1. Prior de contexto: regras (hora, clima) + memoria por kernel do que foi
-//      ouvido em momentos parecidos.
-//   2. Estado da sessao: segue o que voce escuta e se afasta do que pula.
-//   3. Onda: mare lenta mais inquietacao, que tira a sessao de um clima so.
-//   4. Aprendizado: rede Wide & Deep on-line e regressao por kernel, que cruza
-//      momento e som. O kernel rende com poucos dados; a rede, com muitos.
-//   5. Sorteio: Thompson sampling e softmax mantem a ordem infinita e variada.
-
 import { clamp, hash32, hashUnit, lerp, logit, makeRng, betaSample, softmaxPick, round } from './math.js';
 import { FAMILY_COUNT } from './genres.js';
 import { CONTEXT_DIM, contextVector, compactContext, dayparts } from './context.js';
@@ -18,7 +8,7 @@ export const METIS_VERSION = 1;
 
 const EXTRA_DIM = 12;
 const INPUT_DIM = TRACK_DIM + CONTEXT_DIM + EXTRA_DIM;
-const WIDE_TRACK = [10, 11, 0, 1, 2, 5]; // valencia, excitacao, tempo, energia, graves, brilho
+const WIDE_TRACK = [10, 11, 0, 1, 2, 5];
 const WIDE_DIM = WIDE_TRACK.length * 10 + FAMILY_COUNT * 4;
 
 const MEMORY_CAP = 1500;
@@ -45,7 +35,6 @@ export function moodLabel(v, a) {
   return 'equilibrado';
 }
 
-// Regras de partida. Valem sozinhas ate existir historico suficiente.
 export function heuristicPrior(ctx) {
   let a = 0.5 + 0.24 * Math.cos((TAU * (ctx.hour - 17)) / 24);
   let v = 0.52;
@@ -116,8 +105,6 @@ export class Metis {
     };
   }
 
-  // Espaco emocional relativo a biblioteca: 0,5 e o centro do que voce tem.
-  // Sem isso, uma biblioteca so de rock nunca alcancaria um alvo calmo.
   _space(library) {
     let sumV = 0;
     let sumA = 0;
@@ -149,7 +136,6 @@ export class Metis {
     return { v: space.v(f.valence), a: space.a(f.arousal) };
   }
 
-  // Memoria por kernel: pesa cada audicao passada pela semelhanca do momento.
   _memoryView(ctx, space) {
     const now = compactContext(ctx);
     const byTrack = new Map();
@@ -170,8 +156,7 @@ export class Metis {
       bump(byTrack, m.id, signed);
       bump(byArtist, m.ar, signed);
       bump(byFamily, m.f, signed);
-      // A sessao atual nao conta como evidencia: senao o que acabou de tocar
-      // puxaria mais do mesmo e o clima nunca mudaria.
+
       if (ctx.ts - m.ts < SESSION_WINDOW) continue;
       neighbors.push({ k, y: m.y, v: space.v(m.v), a: space.a(m.a), f: m.f });
       if (m.y >= 0.5) {
@@ -192,9 +177,6 @@ export class Metis {
     };
   }
 
-  // Regressao por kernel no contexto e no som: em momentos parecidos, como foram
-  // as musicas com som parecido? Generaliza entre faixas com poucos exemplos,
-  // que e justamente onde a rede ainda erra.
   _neighborEstimate(place, family, neighbors) {
     let support = 0;
     let hits = 0;
@@ -209,8 +191,6 @@ export class Metis {
     return { value: (hits + prior * 1.2) / (support + 1.2), prior, support };
   }
 
-  // Mare lenta: osciladores de periodos que nao se alinham. A fase e pessoal
-  // e o tempo e o do relogio, entao o clima muda sozinho ao longo das horas.
   _tide(ts) {
     const h = ts / 36e5;
     const phase = (i) => TAU * hashUnit(`${this.seed}:${i}`);
@@ -221,8 +201,6 @@ export class Metis {
     };
   }
 
-  // Inquietacao: quando a sessao para no mesmo lugar do mapa, cresce uma forca
-  // que empurra para a regiao menos visitada nas ultimas 48 horas.
   _restless(ts, base, adventure) {
     const windowed = this.trail.slice(-14);
     if (windowed.length < 6) return { v: 0, a: 0, urge: 0 };
@@ -248,7 +226,7 @@ export class Metis {
       if (x < 0.06 || x > 0.94 || y < 0.06 || y > 0.94) continue;
       let density = 0;
       for (const p of recent) density += Math.exp(-((p.v - x) ** 2 + (p.a - y) ** 2) / 0.05);
-      // Desempate por hora: a direcao fica estavel dentro de uma mesma hora.
+
       density += hashUnit(`${this.seed}:${hourBucket}:${i}`) * 0.5;
       if (!best || density < best.density) best = { x, y, density };
     }
@@ -271,7 +249,7 @@ export class Metis {
     const restless = this._restless(ctx.ts, current, adventure);
     let dv = tide.v + restless.v;
     let da = tide.a + restless.a;
-    // Limite de passo: a onda sobe devagar, sem saltos de clima.
+
     const size = Math.hypot(dv, da);
     const limit = 0.2 + 0.12 * adventure + 0.1 * restless.urge;
     if (size > limit) {
@@ -347,7 +325,6 @@ export class Metis {
     return { x, wide: this._wide(tv, resolve(track).family, ctx) };
   }
 
-  // Peso da rede: comeca em zero e cresce conforme ela acumula evidencia.
   _alpha() {
     const n = this.metrics.samples;
     return Math.min(0.9, n / (n + 40));
@@ -403,7 +380,7 @@ export class Metis {
     const near = this._neighborEstimate(p, f.family, s.view.neighbors);
     const appetite = 1 - 0.75 * s.target.urge;
     const lift = clamp(logit(near.value) - logit(near.prior), -3, 3);
-    // Rejeicao segue valendo inteira; so o reforco positivo cede a inquietacao.
+
     parts.neighbors = 2.6 * (lift > 0 ? lift * appetite : lift);
 
     parts.like = track.liked ? 0.5 : 0;
@@ -417,7 +394,6 @@ export class Metis {
     return { total, parts };
   }
 
-  // Devolve as proximas n musicas simulando a sessao adiante.
   plan(library, ctx, n = 1, { current = null, exclude = [], history = [] } = {}) {
     const pool = library.filter((t) => t.playable !== false);
     if (!pool.length) return [];
@@ -458,7 +434,7 @@ export class Metis {
         ctx: stepCtx, ctxVec, target, prev: sim.prev, space, view, alpha, size,
         ts: sim.ts, artistGap, useModel: false,
       };
-      // Bibliotecas grandes: filtro barato antes de consultar a rede.
+
       if (candidates.length > 320) {
         const ranked = candidates
           .map((t) => ({ t, s: this._score(t, state).total }))
@@ -493,7 +469,6 @@ export class Metis {
     return out;
   }
 
-  // Explica o que distingue a escolha das demais candidatas, nao o valor bruto.
   _reasons(pick, s, typical) {
     const { t: track, parts } = pick;
     const edge = (key) => parts[key] - (typical[key] || 0);
@@ -523,14 +498,12 @@ export class Metis {
     return out.sort((a, b) => b.score - a.score).slice(0, 3).map((r) => r.text);
   }
 
-  // Marca a faixa como recente ja no inicio: quem pula rapido nao deve reouvir.
   noteStart(id) {
     if (this.recent.at(-1) === id) return;
     this.recent.push(id);
     if (this.recent.length > RECENT_CAP) this.recent.splice(0, this.recent.length - RECENT_CAP);
   }
 
-  // Recompensa de 0 a 1 a partir de quanto da musica foi ouvida.
   static reward({ ratio, skipped, listened = Infinity }) {
     if (!skipped) return 1;
     if (ratio >= 0.85) return 0.9;
@@ -538,7 +511,6 @@ export class Metis {
     return clamp(ratio * 0.75, 0.05, 0.6);
   }
 
-  // Chamado quando uma musica termina ou e pulada.
   observe({ track, prev = null, ctx, library, ratio = 1, listened, skipped = false, intent = 'metis', target = null }) {
     const pool = library?.length ? library : [track];
     const space = this._space(pool);
@@ -568,7 +540,7 @@ export class Metis {
       const gain = (deliberate ? 0.5 : 0.22) + 0.2 * y;
       this.mood = { v: lerp(this.mood.v, place.v, gain), a: lerp(this.mood.a, place.a, gain), ts };
     } else if (y < 0.25) {
-      // Pular e um sinal negativo: o estado se afasta um pouco dessa regiao.
+
       this.mood = {
         v: clamp(this.mood.v - (place.v - this.mood.v) * 0.12),
         a: clamp(this.mood.a - (place.a - this.mood.a) * 0.12),
@@ -602,7 +574,7 @@ export class Metis {
   }
 
   _learn(x, wide, y, w) {
-    // Perda prequencial: avalia antes de treinar, entao e uma medida honesta.
+
     const m = this.metrics;
     const p = clamp(this.net.predict(x, wide), 1e-4, 1 - 1e-4);
     const q = clamp(m.meanY, 1e-4, 1 - 1e-4);
@@ -633,7 +605,6 @@ export class Metis {
     for (const key of keys.slice(0, keys.length - TRANSITION_CAP)) delete this.transitions[key];
   }
 
-  // Curtir sem esperar a musica acabar tambem ensina o modelo.
   feedback({ track, ctx, liked, library }) {
     const stat = this.stats[track.id] || { a: 1.2, b: 1, plays: 0, skips: 0, last: 0, manual: 0 };
     stat.a = Math.max(1.2, stat.a + (liked ? 2 : -2));
@@ -651,7 +622,6 @@ export class Metis {
     this._learn(x, wide, 1, 1.5);
   }
 
-  // Remove uma faixa de todas as estruturas do modelo.
   forget(trackId) {
     delete this.stats[trackId];
     this.memory = this.memory.filter((m) => m.id !== trackId);
@@ -662,7 +632,6 @@ export class Metis {
     }
   }
 
-  // Resumo para o painel do Metis.
   snapshot(library, ctx) {
     const pool = library.filter((t) => t.playable !== false);
     const space = this._space(pool.length ? pool : [{ id: '_', title: '', artist: '' }]);

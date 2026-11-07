@@ -1,5 +1,3 @@
-// Barramento de eventos minimo entre nucleo e interfaces.
-
 const listeners = new Map();
 
 export const bus = {

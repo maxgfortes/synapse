@@ -1,5 +1,3 @@
-// Utilitarios numericos usados pelo Metis. Sem dependencias de DOM.
-
 export const clamp = (x, lo = 0, hi = 1) => (x < lo ? lo : x > hi ? hi : x);
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const sigmoid = (x) => 1 / (1 + Math.exp(-clamp(x, -30, 30)));
@@ -8,7 +6,6 @@ export const logit = (p) => {
   return Math.log(q / (1 - q));
 };
 
-// FNV-1a de 32 bits: estavel entre sessoes e entre dispositivos.
 export function hash32(text) {
   let h = 0x811c9dc5;
   const s = String(text);
@@ -21,7 +18,6 @@ export function hash32(text) {
 
 export const hashUnit = (text) => hash32(text) / 0xffffffff;
 
-// Mulberry32. O estado cabe em um inteiro, entao entra no export do modelo.
 export function makeRng(seed = Date.now() >>> 0) {
   let s = seed >>> 0;
   const rng = () => {
@@ -40,7 +36,6 @@ export function gaussian(rng) {
   return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
-// Marsaglia-Tsang.
 function gammaSample(shape, rng) {
   if (shape < 1) {
     return gammaSample(shape + 1, rng) * Math.pow(Math.max(rng(), 1e-12), 1 / shape);
@@ -63,7 +58,6 @@ export function betaSample(a, b, rng) {
   return x / (x + y || 1);
 }
 
-// Sorteio softmax: quanto maior a temperatura, mais aleatorio.
 export function softmaxPick(scores, temperature, rng) {
   const t = Math.max(temperature, 1e-3);
   let max = -Infinity;

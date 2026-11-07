@@ -1,6 +1,3 @@
-// Pecas usadas pelas duas interfaces. A aparencia muda pelo CSS conforme a
-// classe ui-desktop ou ui-mobile em <html>.
-
 import { CONFIG } from '../config.js';
 import { bus, escapeHtml as esc, formatTime } from '../core/bus.js';
 import { db } from '../core/db.js';
@@ -8,6 +5,7 @@ import { store } from '../core/store.js';
 import { player } from '../core/player.js';
 import { contextService, WEATHER_LABEL } from '../core/context.js';
 import { readTags } from '../core/tags.js';
+import { canLogin, fetchLibrary, finishLogin, parseExport, redirectUri, startLogin } from '../core/spotify.js';
 import { enrichQueue } from '../core/enrich.js';
 import { resolve } from '../metis/features.js';
 import { GENRES } from '../metis/genres.js';
@@ -15,7 +13,6 @@ import { icons, logo } from './icons.js';
 
 export const ui = { mode: 'desktop', install: null };
 
-// Cores do celular. on e a cor do texto sobre a cor do tema.
 export const THEMES = [
   { id: 'blue', label: 'Azul', color: '#0a84ff', on: '#fff' },
   { id: 'navy', label: 'Azul escuro', color: '#3355cc', on: '#fff' },
@@ -43,7 +40,6 @@ window.addEventListener('beforeinstallprompt', (event) => {
   bus.emit('installable');
 });
 
-// No celular, menus e dialogos saem com animacao antes de sair do DOM.
 function leave(element) {
   if (!isMobile()) {
     element.remove();
@@ -64,7 +60,6 @@ export function cover(track, className = '') {
   return `<span class="cover cover-empty ${className}">${icons.note}</span>`;
 }
 
-// A biblioteca guarda so a capa pequena. Telas grandes buscam a versao maior.
 const largeCache = { id: null, src: null, zoom: false };
 
 const loadImage = (src) => new Promise((done) => {
@@ -74,7 +69,6 @@ const loadImage = (src) => new Promise((done) => {
   probe.src = src;
 });
 
-// maxres nao existe em todo video. hqdefault tem faixas pretas: o zoom as corta.
 async function youtubeCover(id) {
   const full = await loadImage(`https://i.ytimg.com/vi/${id}/maxresdefault.jpg`);
   if (full) return { src: full, zoom: false };
@@ -214,7 +208,6 @@ export function promptBox(title, { value = '', placeholder = '', confirm = 'OK' 
   });
 }
 
-// Menu de contexto no desktop e sheet inferior no celular.
 export function showMenu(items, { x = 0, y = 0, title = '' } = {}) {
   document.querySelector('.menu-layer')?.remove();
   const layer = html('<div class="menu-layer"></div>');
@@ -338,7 +331,6 @@ export function pickFiles({ multiple = true, accept = 'audio/*,.mp3,.m4a,.aac,.f
   });
 }
 
-// URLs, arquivos locais ou os dois de uma vez.
 export function openAdd({ files: initialFiles = [], text = '' } = {}) {
   let files = [...initialFiles];
   const body = html(`<div class="add-form">
@@ -521,6 +513,65 @@ export async function importBackup() {
   }
 }
 
+function importReport(report) {
+  const parts = [`${report.added} músicas importadas`];
+  if (report.repeated) parts.push(`${report.repeated} já na biblioteca`);
+  if (report.playlists) parts.push(`${report.playlists} playlists`);
+  toast(parts.join(', ') + '.');
+  player.refill();
+}
+
+export function openSpotifyImport() {
+  const body = html(`<div class="import-form">
+    <p>As músicas entram com capa, título e artista. O vídeo é procurado quando cada uma tocar pela primeira vez.</p>
+    <div class="import-actions">
+      <button type="button" class="btn" data-spotify="login" ${canLogin() ? '' : 'disabled'}>Entrar no Spotify</button>
+      <button type="button" class="btn" data-spotify="files">Escolher arquivos do Spotify</button>
+    </div>
+    <p class="hint">${canLogin() ? '' : 'O login precisa de um Client ID em js/config.js. '}Para usar arquivos, peça seus dados em Spotify, Conta, Privacidade, e escolha YourLibrary.json e os arquivos Playlist.</p>
+    <div class="add-progress" hidden><img src="assets/icons/loading.gif" alt=""><span></span></div>
+  </div>`);
+  const box = body.querySelector('.add-progress');
+  const modal = openModal({ title: 'Importar do Spotify', className: 'sheet', body, buttons: [{ label: 'Fechar' }] });
+  body.addEventListener('click', async (event) => {
+    const action = event.target.closest('[data-spotify]')?.dataset.spotify;
+    if (action === 'login') startLogin();
+    if (action !== 'files') return;
+    const files = await pickFiles({ accept: '.json,application/json' });
+    if (!files.length) return;
+    try {
+      box.hidden = false;
+      box.querySelector('span').textContent = 'Lendo arquivos...';
+      const documents = await Promise.all(files.map(async (file) => JSON.parse(await file.text())));
+      const library = parseExport(documents);
+      if (!library.tracks.length && !library.playlists.length) throw new Error('empty');
+      const report = await store.importSpotify(library, (text) => { box.querySelector('span').textContent = text; });
+      importReport(report);
+      modal.close();
+    } catch {
+      box.hidden = true;
+      toast('Estes arquivos não têm músicas do Spotify.');
+    }
+  });
+}
+
+export async function resumeSpotifyLogin() {
+  let token = null;
+  try {
+    token = await finishLogin();
+  } catch {
+    toast('Não foi possível entrar no Spotify.');
+    return;
+  }
+  if (!token) return;
+  toast('Importando do Spotify...');
+  try {
+    importReport(await store.importSpotify(await fetchLibrary(token, toast), toast));
+  } catch {
+    toast(`Falha ao importar do Spotify. Confira se ${redirectUri()} está no painel do app.`);
+  }
+}
+
 export async function openPrefs() {
   const key = await db.getKV('ytKey', '');
   const metis = store.metis;
@@ -553,6 +604,7 @@ export async function openPrefs() {
       <button type="button" class="btn" data-do="export-all">Exportar tudo</button>
       <button type="button" class="btn" data-do="export-ml">Exportar só o ML</button>
       <button type="button" class="btn" data-do="import">Importar</button>
+      <button type="button" class="btn" data-do="spotify">Importar do Spotify</button>
       <button type="button" class="btn" data-do="reset-ml">Zerar aprendizado</button>
       <button type="button" class="btn btn-danger" data-do="wipe">Apagar tudo</button>
       ${canInstall ? '<button type="button" class="btn" data-do="install">Instalar app</button>' : ''}
@@ -587,6 +639,7 @@ export async function openPrefs() {
     if (action === 'export-all') exportBackup('all');
     if (action === 'export-ml') exportBackup('ml');
     if (action === 'import') importBackup();
+    if (action === 'spotify') openSpotifyImport();
     if (action === 'install') ui.install?.prompt();
     if (action === 'reset-ml' && await confirmBox('Zerar aprendizado', 'O Metís esquece tudo o que aprendeu. A biblioteca continua igual.', { confirm: 'Zerar', danger: true })) {
       await store.resetModel();
@@ -732,7 +785,6 @@ function rate(bucket) {
   return Math.round((1 - bucket.skips / bucket.n) * 100);
 }
 
-// Painel do Metis: mesmo conteudo nas duas interfaces.
 export function metisPanel() {
   const library = store.tracks;
   const snap = store.metis.snapshot(library, contextService.now());

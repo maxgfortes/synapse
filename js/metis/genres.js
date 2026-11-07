@@ -1,7 +1,3 @@
-// Taxonomia usada quando ainda nao ha audio analisado. Valores sao priors,
-// nao verdades: a analise real do audio tem prioridade em features.js.
-
-// v = valencia, a = excitacao, bpm, bass, treble, f = familia
 export const GENRES = {
   pop:        { label: 'Pop',          v: .68, a: .62, bpm: 116, bass: .55, treble: .55, f: 0 },
   kpop:       { label: 'K-Pop',        v: .72, a: .72, bpm: 124, bass: .55, treble: .62, f: 0 },
@@ -48,7 +44,6 @@ export const GENRES = {
 
 export const FAMILY_COUNT = 11;
 
-// A ordem importa: rotulos mais especificos antes dos genericos.
 const RULES = [
   [/\bk-?pop\b/, 'kpop'], [/\bj-?pop\b|anime/, 'jpop'],
   [/phonk/, 'phonk'], [/\btrap\b/, 'trap'],
@@ -84,7 +79,6 @@ export function normalizeGenre(raw) {
   return null;
 }
 
-// Pistas do titulo ajustam os priors, por exemplo "slowed" ou "acoustic".
 const TITLE_HINTS = [
   [/slowed|reverb/, { a: -.2, v: -.12, bpmScale: .82, bass: .08 }],
   [/sped.?up|nightcore/, { a: .16, v: .08, bpmScale: 1.2 }],

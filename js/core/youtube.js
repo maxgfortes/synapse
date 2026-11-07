@@ -1,13 +1,9 @@
-// Busca e metadados do YouTube. Com chave, usa a YouTube Data API v3.
-// Sem chave, usa espelhos publicos. Colar URL funciona nos dois casos.
-
 import { CONFIG } from '../config.js';
 import { db } from './db.js';
 
 const API = 'https://www.googleapis.com/youtube/v3';
 const RECENT_LIMIT = 12;
 
-// Buscas recentes guardam os resultados: repetir uma nao gasta cota da API.
 export const getRecentSearches = () => db.getKV('recentSearches', []);
 
 export async function saveRecentSearch(query, results) {
@@ -36,7 +32,7 @@ export function parseYouTubeId(input) {
       const m = url.pathname.match(/^\/(?:embed|shorts|live|v)\/([\w-]{11})/);
       if (m) return m[1];
     }
-  } catch { /* nao era uma URL */ }
+  } catch {  }
   return null;
 }
 
@@ -49,7 +45,6 @@ export function parsePlaylistId(input) {
   }
 }
 
-// Separa "Artista - Musica (Official Video)" e canais "Artista - Topic".
 export function cleanTitle(rawTitle, channel = '') {
   const noise = /[([{][^)\]}]*(official|oficial|lyric|letra|legendado|audio|áudio|video|vídeo|clipe|visualizer|hd|4k|mv|m\/v)[^)\]}]*[)\]}]/gi;
   const text = rawTitle.replace(noise, '').replace(/\s+/g, ' ').trim();
@@ -143,7 +138,6 @@ async function searchPiped(query) {
   throw lastError || new Error('search-unavailable');
 }
 
-// Outra versao tocavel da mesma musica, com a duracao mais proxima.
 export async function findPlayable(track, excludeIds = []) {
   const results = await searchYouTube(`${track.artist} ${track.title}`);
   const options = results.filter((r) => !excludeIds.includes(r.id));
@@ -158,14 +152,13 @@ export async function searchYouTube(query) {
     try {
       return await searchOfficial(query, key);
     } catch (error) {
-      // Cota esgotada ou chave invalida nao deve derrubar a busca.
+
       if (error.status !== 403 && error.status !== 400) throw error;
     }
   }
   return searchPiped(query);
 }
 
-// Metadados de uma URL colada. oEmbed nao exige chave; a duracao chega ao tocar.
 export async function fetchVideoInfo(id) {
   const key = await getApiKey();
   if (key) {
@@ -178,7 +171,7 @@ export async function fetchVideoInfo(id) {
           duration: isoDuration(item.contentDetails.duration),
         });
       }
-    } catch { /* cai no oEmbed */ }
+    } catch {  }
   }
   const url = encodeURIComponent(`https://www.youtube.com/watch?v=${id}`);
   const response = await fetch(`https://www.youtube.com/oembed?url=${url}&format=json`);
@@ -216,7 +209,7 @@ export async function fetchPlaylist(listId) {
         channel: item.uploaderName || '',
         duration: item.duration,
       }));
-    } catch { /* tenta o proximo */ }
+    } catch {  }
   }
   return [];
 }

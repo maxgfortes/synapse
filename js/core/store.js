@@ -1,48 +1,22 @@
-// Biblioteca, playlists e backup. Uma unica fonte de verdade para as duas interfaces.
-
 import { db } from './db.js';
 import { bus, uid } from './bus.js';
 import { readTags } from './tags.js';
 import { fetchPlaylist, fetchVideoInfo, parsePlaylistId, parseYouTubeId } from './youtube.js';
 import { enrichQueue } from './enrich.js';
+import { shrinkCover } from './cover.js';
 import { fold, normalizeGenre } from '../metis/genres.js';
 import { hash32 } from '../metis/math.js';
 import { Metis } from '../metis/engine.js';
 
-const COVER_SIZE = 96;
 const BACKUP_FORMAT = 'synapse-backup';
 
 const matchKey = (track) => `${fold(track.artist)}|${fold(track.title)}`.replace(/[^\w|]+/g, '');
-
-// Capa em baixa qualidade: 96 px em JPEG, guardada direto com a faixa.
-async function shrinkCover(source) {
-  try {
-    const blob = source instanceof Blob ? source : await fetch(source).then((r) => {
-      if (!r.ok) throw new Error('cover');
-      return r.blob();
-    });
-    const bitmap = await createImageBitmap(blob);
-    const side = Math.min(bitmap.width, bitmap.height);
-    const canvas = document.createElement('canvas');
-    canvas.width = COVER_SIZE;
-    canvas.height = COVER_SIZE;
-    canvas.getContext('2d').drawImage(
-      bitmap,
-      (bitmap.width - side) / 2, (bitmap.height - side) / 2, side, side,
-      0, 0, COVER_SIZE, COVER_SIZE,
-    );
-    bitmap.close?.();
-    return canvas.toDataURL('image/jpeg', 0.62);
-  } catch {
-    return null;
-  }
-}
 
 class Store {
   constructor() {
     this.tracks = [];
     this.byId = new Map();
-    this.previews = new Map(); // ouvidas na busca, fora da biblioteca
+    this.previews = new Map();
     this.playlists = [];
     this.metis = null;
     this.saveTimer = null;
@@ -73,7 +47,6 @@ class Store {
     return this.byId.has(id);
   }
 
-  // Faixa para ouvir sem salvar. Se a musica ja esta na biblioteca, usa ela.
   preview(result) {
     const saved = this.tracks.find((t) => t.sources?.yt === result.id) || this.findMatch(result);
     if (saved) return saved;
@@ -100,7 +73,6 @@ class Store {
     return this.previews.get(id);
   }
 
-  // Salva na biblioteca a musica que esta so sendo ouvida.
   savePreview(id) {
     const item = this.previews.get(id);
     if (!item) return null;
@@ -134,15 +106,13 @@ class Store {
     if (!track) return null;
     Object.assign(track, patch);
     if (patch.genre !== undefined) track.genreId = normalizeGenre(patch.genre);
-    // Objeto novo a cada mudanca invalida o cache de features do Metis.
+
     if (patch.features) track.features = { ...patch.features };
     await db.put('tracks', track);
     this._changed('update');
     return track;
   }
 
-  // Adiciona um resultado do YouTube. Se ja existir a mesma musica como arquivo
-  // local, vincula as duas fontes em vez de duplicar.
   async addYouTube(result, options) {
     const outcome = await this._addYouTube(result, options);
     const previewId = `yt_${result.id}`;
@@ -193,7 +163,70 @@ class Store {
     return { track, added: true };
   }
 
-  // Aceita URLs de video e de playlist, uma por linha ou misturadas no texto.
+  async importSpotify({ tracks = [], playlists = [] }, onProgress = () => {}) {
+    const report = { added: 0, repeated: 0, playlists: 0 };
+    const known = new Map();
+    const fresh = [];
+    const place = async (item) => {
+      const key = matchKey(item);
+      if (known.has(key)) return known.get(key);
+      const existing = this.findMatch(item);
+      if (existing) {
+        report.repeated++;
+        known.set(key, existing.id);
+        return existing.id;
+      }
+      const id = `sp_${item.spotifyId || hash32(key).toString(36)}`;
+      const track = {
+        id,
+        title: item.title,
+        artist: item.artist,
+        album: item.album || '',
+        genre: '',
+        genreId: null,
+        year: null,
+        duration: item.duration || 0,
+        size: 0,
+        addedAt: Date.now(),
+        liked: false,
+        plays: 0,
+        skips: 0,
+        lastPlayed: 0,
+        url: null,
+        cover: item.cover || null,
+        sources: { yt: null, local: false, spotify: item.spotifyId || key },
+        features: null,
+        enrichedAt: 0,
+      };
+      this.tracks.push(track);
+      this.byId.set(id, track);
+      fresh.push(track);
+      report.added++;
+      known.set(key, id);
+      return id;
+    };
+
+    for (const item of tracks) await place(item);
+    const lists = [];
+    for (const list of playlists) {
+      const ids = [];
+      for (const item of list.tracks) ids.push(await place(item));
+      lists.push({ name: list.name, ids: [...new Set(ids)] });
+    }
+    onProgress(`Salvando ${fresh.length} músicas...`);
+    await db.bulkPut('tracks', fresh);
+    for (const list of lists) {
+      const same = this.playlists.find((p) => p.name === list.name);
+      if (same) await this.addToPlaylist(same.id, list.ids);
+      else await this.createPlaylist(list.name, list.ids);
+      report.playlists++;
+    }
+    enrichQueue.add(fresh.map((t) => t.id));
+    this._changed('add');
+    bus.emit('playlists');
+    return report;
+  }
+
   async addFromText(text, onProgress = () => {}) {
     const tokens = text.split(/[\s,]+/).filter(Boolean);
     const report = { added: 0, linked: 0, repeated: 0, failed: [] };
@@ -291,7 +324,6 @@ class Store {
     return report;
   }
 
-  // Associa um arquivo local a uma faixa ja existente do YouTube.
   async linkFile(trackId, file) {
     const track = this.get(trackId);
     if (!track) return;
@@ -300,7 +332,6 @@ class Store {
     enrichQueue.add([trackId]);
   }
 
-  // Associa uma URL do YouTube a uma faixa local.
   async linkYouTube(trackId, urlText) {
     const videoId = parseYouTubeId(urlText);
     const track = this.get(trackId);
@@ -418,7 +449,7 @@ class Store {
     if (scope === 'ml') return base;
     return {
       ...base,
-      // O audio local fica de fora: backups precisam caber em qualquer lugar.
+
       tracks: this.tracks,
       playlists: this.playlists,
       events: await db.all('events'),
@@ -436,7 +467,7 @@ class Store {
     if (data.scope !== 'ml') {
       const fresh = (data.tracks || []).filter((t) => t?.id && !this.byId.has(t.id));
       for (const track of fresh) {
-        // Arquivos locais nao vem no backup: a faixa precisa ser religada.
+
         await this._insert(track.sources?.local
           ? { ...track, sources: { ...track.sources, local: false, missing: !track.sources.yt } }
           : track);

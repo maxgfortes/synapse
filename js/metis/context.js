@@ -1,11 +1,7 @@
-// Transforma momento, clima e sessao em um vetor numerico. Funcao pura:
-// quem busca GPS e clima e js/core/context.js.
-
 import { clamp } from './math.js';
 
 export const WEATHER_CLASSES = ['clear', 'cloudy', 'fog', 'rain', 'storm', 'snow'];
 
-// Codigos WMO usados pelo Open-Meteo.
 export function weatherClass(code) {
   if (code == null) return null;
   if (code <= 1) return 'clear';
@@ -20,7 +16,6 @@ function dayOfYear(date) {
   return Math.floor((Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) - Date.UTC(date.getFullYear(), 0, 0)) / 864e5);
 }
 
-// 0 verao, 1 outono, 2 inverno, 3 primavera, respeitando o hemisferio.
 export function seasonOf(date, lat) {
   const m = date.getMonth();
   const north = m >= 5 && m <= 7 ? 0 : m >= 8 && m <= 10 ? 1 : m === 11 || m <= 1 ? 2 : 3;
@@ -90,7 +85,6 @@ export function contextVector(c) {
   ]);
 }
 
-// Faixas suaves do dia para os cruzamentos do modelo. Somam 1.
 export function dayparts(hour) {
   const bump = (center, width) => {
     const d = 12 - Math.abs(((hour - center + 36) % 24) - 12);
@@ -101,8 +95,6 @@ export function dayparts(hour) {
   return raw.map((x) => x / total);
 }
 
-// Versao compacta para a memoria por kernel. Cada dimensao tem peso proprio:
-// a hora conta mais que a estacao.
 export function compactContext(c) {
   const temp = c.temp == null ? 0.5 : clamp((c.temp + 5) / 45);
   return [

@@ -1,7 +1,3 @@
-// Gera js/ui/icons.js a partir de assets/sfsymbols-svg-1.0/symbols.
-// Inclui so os simbolos usados, para o app nao carregar 1.679 arquivos.
-// Uso: node tools/make-icons.mjs
-
 import { readFileSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 
@@ -27,6 +23,7 @@ const MAP = {
   cloud: 'cloud',
   disk: 'arrow.down.circle',
   plus: 'plus',
+  download: 'square.and.arrow.down',
   more: 'ellipsis',
   back: 'chevron.left',
   forward: 'chevron.right',
@@ -55,7 +52,7 @@ function convert(name) {
   const paths = [...source.matchAll(/\sd='([^']+)'/g)]
     .map((m) => `<path d="${shortNumber(m[1]).replace(/\s+/g, ' ').trim()}"/>`)
     .join('');
-  // Caixa quadrada: cada simbolo tem proporcao propria e o CSS usa 1em por 1em.
+
   const side = Math.max(width, height);
   const box = [(width - side) / 2, (height - side) / 2, side, side].map((n) => Math.round(n * 100) / 100).join(' ');
   return `<svg viewBox="${box}" aria-hidden="true" focusable="false"><g transform="${shortNumber(transform)}" fill="currentColor" stroke="currentColor" fill-rule="nonzero">${paths}</g></svg>`;
@@ -63,13 +60,10 @@ function convert(name) {
 
 const lines = Object.entries(MAP).map(([key, name]) => `  ${key}: \`${convert(name)}\`,`);
 
-writeFileSync(output, `// Gerado por tools/make-icons.mjs a partir dos SF Symbols. Nao editar a mao.
-
-export const icons = {
+writeFileSync(output, `export const icons = {
 ${lines.join('\n')}
 };
 
-// Logo do Synapse.
 export const logo = \`${convert('icloud.fill')}\`;
 `);
 console.log(`${lines.length} icones, ${Math.round(readFileSync(output).length / 1024)} KB`);

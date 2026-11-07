@@ -1,6 +1,3 @@
-// Transforma uma faixa em numeros. Analise real de audio tem prioridade;
-// sem ela, usa priors do genero e pistas do titulo com confianca menor.
-
 import { GENRES, FAMILY_COUNT, normalizeGenre, titleHints } from './genres.js';
 import { clamp, hashUnit, lerp } from './math.js';
 
@@ -10,7 +7,6 @@ export function genreOf(track) {
   return track.genreId || normalizeGenre(track.genre) || normalizeGenre(`${track.title} ${track.artist}`) || 'other';
 }
 
-// Uma faixa reanalisada recebe outro objeto em features, o que invalida o cache.
 const cache = new WeakMap();
 
 export function resolve(track) {
@@ -26,7 +22,7 @@ function compute(track) {
   const g = GENRES[genreId] || GENRES.other;
   const hint = titleHints(track.title);
   const a = track.features;
-  // Sem audio, um desvio estavel por faixa espalha as musicas do mesmo genero.
+
   const spreadV = (hashUnit(`${track.id}|v`) - 0.5) * 0.14;
   const spreadA = (hashUnit(`${track.id}|a`) - 0.5) * 0.14;
 
@@ -55,7 +51,7 @@ function compute(track) {
   const arousalAudio = 0.46 * a.energy + 0.26 * tempo + 0.16 * a.brightness + 0.12 * a.beat;
   const valenceAudio = 0.42 * (a.mode ? 0.72 : 0.3)
     + 0.22 * a.brightness + 0.2 * a.beat + 0.16 * (1 - a.dynamics);
-  // Modo e brilho erram em generos sombrios, por isso o genero ainda opina.
+
   const hasGenre = genreId !== 'other';
   return {
     genreId,
@@ -100,7 +96,6 @@ export function trackVector(track) {
   return v;
 }
 
-// Roda de Camelot: distancia harmonica entre tons (0 = mesma casa).
 const CAMELOT_MAJOR = [8, 3, 10, 5, 12, 7, 2, 9, 4, 11, 6, 1];
 const CAMELOT_MINOR = [5, 12, 7, 2, 9, 4, 11, 6, 1, 8, 3, 10];
 
@@ -112,7 +107,6 @@ export function harmonicDistance(a, b) {
   return wheel + (a.mode === b.mode ? 0 : wheel === 0 ? 1 : 1.5);
 }
 
-// Compara BPMs aceitando meio e dobro do tempo.
 export function tempoGap(a, b) {
   if (!a || !b) return 0;
   return Math.min(

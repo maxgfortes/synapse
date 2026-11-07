@@ -1,7 +1,3 @@
-// Gera o icone do app, os splash do iPhone e a imagem de compartilhamento a
-// partir do simbolo icloud.fill, usando o Edge ou o Chrome em modo headless.
-// Uso: node tools/make-assets.mjs
-
 import { execFileSync } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -15,7 +11,7 @@ const browser = [
 ].find(existsSync);
 if (!browser) throw new Error('Edge ou Chrome nao encontrado.');
 
-const DARK = '#000000';
+const DARK = '#0f0f0f';
 const LIGHT = '#ffffff';
 
 const source = readFileSync(join(root, 'assets/sfsymbols-svg-1.0/symbols/icloud.fill.svg'), 'utf8');
@@ -26,11 +22,9 @@ const paths = [...source.matchAll(/\sd='([^']+)'/g)].map((m) => `<path d="${m[1]
 const side = Math.max(width, height);
 const box = `${(width - side) / 2} ${(height - side) / 2} ${side} ${side}`;
 
-// Desenha o simbolo em uma caixa quadrada, dentro de qualquer SVG.
 const glyph = (color) => `<g transform="${transform}" fill="${color}" stroke="${color}" fill-rule="nonzero">${paths}</g>`;
 const mark = (size, color) => `<svg width="${size}" height="${size}" viewBox="${box}">${glyph(color)}</svg>`;
 
-// Icone vetorial monocromatico: nuvem branca em fundo preto.
 writeFileSync(join(root, 'assets/icons/icon.svg'), `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${DARK}"/><svg x="12.200" y="12.200" width="39.600" height="39.600" viewBox="${box}">${glyph('#ffffff')}</svg></svg>\n`);
 
 const work = mkdtempSync(join(tmpdir(), 'synapse-assets-'));
@@ -61,7 +55,7 @@ for (const size of [192, 512]) {
 }
 shot('assets/icons/monochrome-512.png', 512, 512, `<div style="width:512px;height:512px;${center}">${mark(288, LIGHT)}</div>`);
 shot('assets/icons/favicon-32.png', 32, 32, rounded(32));
-// No iPhone o simbolo ocupa mais do icone.
+
 shot('assets/icons/apple-touch-icon.png', 180, 180, `<div style="width:180px;height:180px;background:${DARK};${center}">${mark(148, LIGHT)}</div>`);
 
 for (const [w, h] of [[1179, 2556], [1290, 2796], [1170, 2532], [1125, 2436], [750, 1334]]) {

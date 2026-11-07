@@ -1,6 +1,3 @@
-// Analise de audio feita no aparelho: BPM, graves, agudos, pitch, tom, energia.
-// Recebe PCM mono e devolve so numeros; o audio nunca sai do dispositivo.
-
 import { clamp } from './math.js';
 
 const FRAME = 2048;
@@ -41,7 +38,6 @@ function fft(re, im) {
   }
 }
 
-// Perfis de Krumhansl-Kessler para detectar o tom.
 const MAJOR = [6.35, 2.23, 3.48, 2.33, 4.38, 4.09, 2.52, 5.19, 2.39, 3.66, 2.29, 2.88];
 const MINOR = [6.33, 2.68, 3.52, 5.38, 2.6, 3.53, 2.54, 4.75, 3.98, 2.69, 3.34, 3.17];
 
@@ -93,10 +89,10 @@ export function detectTempo(onset, frameRate, minBpm = 60, maxBpm = 190) {
   let bestLag = 0;
   let bestScore = -Infinity;
   for (let lag = minLag; lag <= maxLag; lag++) {
-    // Pente: um pulso real tambem aparece nos multiplos do periodo.
+
     const comb = ac[lag] + 0.5 * (ac[lag * 2] || 0) + 0.25 * (ac[lag * 3] || 0);
     const bpm = (60 * frameRate) / lag;
-    // Preferencia perceptual perto de 120 BPM para decidir meio/dobro do tempo.
+
     const prior = Math.exp(-0.5 * (Math.log2(bpm / 120) / 0.9) ** 2);
     const score = comb * prior;
     if (score > bestScore) {
@@ -118,7 +114,6 @@ function percentile(sorted, p) {
   return sorted[Math.min(sorted.length - 1, Math.floor(p * sorted.length))];
 }
 
-// Trecho central, ate maxSeconds. Intro e fim costumam enganar o BPM.
 function centerSlice(samples, sampleRate, maxSeconds) {
   const max = Math.floor(maxSeconds * sampleRate);
   if (samples.length <= max) return samples;
@@ -188,7 +183,7 @@ export function analyzePCM(input, sampleRate, { maxSeconds = 90 } = {}) {
       else sumTreble += p;
       weighted += k * m;
       total += m;
-      // Fluxo em escala log: uma batida fraca conta tanto quanto uma forte.
+
       const d = Math.log1p(m * 10) - Math.log1p(prevMag[k] * 10);
       if (d > 0) flux += d;
       if (k >= pitchLow && k <= pitchHigh && m > bestMag) {
@@ -222,9 +217,9 @@ export function analyzePCM(input, sampleRate, { maxSeconds = 90 } = {}) {
   return {
     bpm: Math.round(tempo.bpm * 10) / 10,
     beat: round3(tempo.strength),
-    // Energia comprimida: -40 dBFS vira 0, -8 dBFS vira 1.
+
     energy: round3(clamp((20 * Math.log10(meanRms + 1e-7) + 40) / 32)),
-    // Graves dominam a potencia, por isso a raiz deixa a escala mais legivel.
+
     bass: round3(clamp(Math.sqrt(sumBass / power))),
     mid: round3(clamp(Math.sqrt(sumMid / power))),
     treble: round3(clamp(Math.sqrt(sumTreble / power) * 2.2)),

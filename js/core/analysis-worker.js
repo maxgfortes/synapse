@@ -1,5 +1,3 @@
-// Roda a analise de audio fora da thread principal.
-
 import { analyzePCM } from '../metis/dsp.js';
 
 self.onmessage = ({ data }) => {

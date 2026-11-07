@@ -1,6 +1,3 @@
-/* Celular: areas e tipografia do app Musica do iOS, em preto solido. Nenhuma
-   barra usa blur ou transparencia. Todo movimento usa a mesma curva do sistema. */
-
 :root { --ios: cubic-bezier(.32, .72, 0, 1); }
 
 .ui-mobile, .ui-mobile body { background: var(--bg); font-size: 17px; font-weight: 300; }
@@ -19,7 +16,6 @@
   -webkit-touch-callout: none;
 }
 
-/* Barra de navegacao. */
 .m-nav {
   position: absolute;
   top: 0;
@@ -60,7 +56,6 @@
   padding: calc(60px + var(--safe-top)) 0 calc(49px + var(--safe-bottom));
 }
 
-/* Barra de abas. Trocar de aba e instantaneo, como no sistema. */
 .m-tabs {
   position: absolute;
   left: 0;
@@ -87,7 +82,6 @@
 .m-tabs svg { width: 25px; height: 25px; margin-bottom: 2px; transition: color .25s ease; }
 .m-tabs button.on { color: var(--tint); }
 
-/* Push e pop: a tela nova cobre a anterior, que recua um terco. */
 .m-view { position: relative; min-height: 100%; background: var(--bg); }
 .m-view.out { position: absolute; left: 0; right: 0; min-height: 0; pointer-events: none; }
 .m-view.in-tab { animation: fade .24s ease both; }
@@ -96,7 +90,6 @@
 .m-view.in-pop { z-index: 1; animation: return-left .46s var(--ios) both; }
 .m-view.out-pop { z-index: 2; animation: leave-right .46s var(--ios) both; }
 
-/* Celulas. */
 .cell {
   position: relative;
   display: flex;
@@ -144,21 +137,6 @@
 }
 .section.plain { position: static; padding: 18px 14px 6px; background: var(--bg); color: var(--muted); font-size: 13px; font-weight: 400; }
 
-.m-index {
-  position: fixed;
-  top: calc(68px + var(--safe-top));
-  bottom: calc(56px + var(--safe-bottom));
-  right: 0;
-  z-index: 5;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-}
-.m-index button { flex: 0 1 15px; min-height: 0; width: 20px; color: var(--tint); font-size: 10px; font-weight: 600; line-height: 1; }
-.m-content:has(.m-index) .cell.song { padding-right: 20px; }
-
 .m-search {
   display: flex;
   align-items: center;
@@ -185,7 +163,7 @@
   pointer-events: none;
 }
 .m-info { color: var(--text); font-size: 16px; font-weight: 700; text-align: center; }
-.m-loading img { width: 44px; height: 44px; }
+.m-loading img { max-width: 40px; max-height: 40px; }
 
 .recent-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px 4px; }
 .recent-head h2 { color: var(--muted); font-size: 14px; font-weight: 500; }
@@ -197,9 +175,8 @@
 
 .m-empty { position: fixed; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 14px; text-align: center; }
 .m-empty p { margin-bottom: 14px; color: var(--text); font-size: 16px; font-weight: 700; }
-.ios-btn { width: 100%; max-width: 280px; height: 44px; margin-top: 8px; border-radius: 8px; background: var(--raised); color: var(--tint); font-size: 17px; font-weight: 400; }
+.ios-btn { width: 100%; max-width: 280px; height: 44px; margin-top: 8px; border-radius: 14px; background: var(--raised); color: var(--tint); font-size: 17px; font-weight: 400; }
 
-/* Painel do Metis. */
 .m-metis { padding: 14px 14px 20px; font-size: 15px; font-weight: 400; }
 .m-metis .compass { max-width: 300px; }
 .m-metis h2 { font-size: 24px; font-weight: 300; text-align: center; }
@@ -215,7 +192,6 @@
 .m-metis .metis-queue strong { font-size: 16px; font-weight: 300; }
 .m-metis .info-list { gap: 6px 14px; font-size: 14px; }
 
-/* Tocando: sobe da parte de baixo e acompanha o dedo ao arrastar. */
 .m-now {
   position: absolute;
   inset: 0;
@@ -225,25 +201,26 @@
   padding: var(--safe-top) 0 calc(6px + var(--safe-bottom));
   overflow: hidden;
   background: var(--bg);
-  transform: translateY(101%);
+  transform: translateX(101%);
   visibility: hidden;
   transition: transform .5s var(--ios), visibility 0s .5s;
 }
 .m-now.open { transform: none; visibility: visible; transition: transform .5s var(--ios); }
 .m-now.dragging { transition: none; }
-.now-top { display: flex; align-items: center; justify-content: space-between; flex: none; height: 60px; padding: 0 2px; }
+.m-now > * { position: relative; z-index: 1; }
+
+.m-now > .now-ambient { background: var(--bg); opacity: 0.4; position: absolute; top: -60px; left: -60px; z-index: 0; width: calc(100% + 120px); height: calc(100% + 120px); pointer-events: none; filter: blur(22px); -webkit-filter: blur(22px); transform: translateZ(0); animation: fade .5s ease; }
+.now-top { display: flex; align-items: center; justify-content: space-between; flex: none; height: 60px; padding: 0 2px; background: var(--bg);}
 .now-icon { display: grid; place-items: center; width: 44px; height: 44px; color: var(--tint); font-size: 20px; }
-.now-pool { color: var(--muted); font-size: 13px; font-weight: 400; }
+.now-pool { color: #fff; font-size: 16px; font-weight: bold; }
 
 .now-art { position: relative; flex: none; width: 100%; aspect-ratio: 1; overflow: hidden; background: var(--raised); transition: transform .5s var(--ios); }
-.m-now.paused .now-art { transform: scale(.93); }
 .now-art.swap .now-cover { animation: fade .4s ease; }
 .now-cover { width: 100%; height: 100%; }
 
 .now-scrub { flex: none; padding: 4px 14px 0; }
 .now-times { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; font-weight: 400; font-variant-numeric: tabular-nums; }
 
-/* Barra fina com agulha vertical. */
 #now-seek {
   --fill: 0%;
   display: block;
@@ -281,22 +258,21 @@
 #now-vol::-moz-range-thumb { width: 26px; height: 26px; border: 0; border-radius: 50%; background: #fff; }
 
 .now-modes { display: flex; justify-content: space-between; flex: none; margin-top: auto; padding: 4px 14px 0; }
-.now-modes button { min-width: 74px; padding: 4px 9px; border-radius: 4px; color: var(--tint); font-size: 14px; font-weight: 300; transition: background .2s ease, color .2s ease; }
+.now-modes button { min-width: 74px; padding: 6px 12px; border-radius: 14px; color: var(--tint); font-size: 14px; font-weight: 300; transition: background .2s ease, color .2s ease; }
 .now-modes button.on { background: var(--tint); color: var(--on-tint); font-weight: 400; }
 
-/* Paginas modais. */
 .ui-mobile .modal { padding: 0; align-items: stretch; background: var(--bg); animation: sheet-up .5s var(--ios) both; }
 .ui-mobile .modal.leaving { animation: sheet-down .34s var(--ios) both; }
 .ui-mobile .modal-card { width: 100%; max-height: none; border-radius: 0; background: var(--bg); box-shadow: none; }
 .ui-mobile .modal-head { position: relative; display: flex; align-items: center; justify-content: center; height: calc(60px + env(safe-area-inset-top, 0px)); padding: env(safe-area-inset-top, 0px) 76px 0; background: var(--bar); }
 .ui-mobile .modal-head h2 { font-size: 17px; font-weight: 500; }
 .ui-mobile .modal-body { padding: 14px 14px 90px; font-size: 16px; -webkit-overflow-scrolling: touch; }
-.ui-mobile .modal-body > p { color: var(--muted); }
+.ui-mobile .modal-body > p, .ui-mobile .import-form > p:first-child { color: var(--muted); font-size: 14px; }
 .ui-mobile .modal-foot { position: absolute; left: 0; right: 0; top: env(safe-area-inset-top, 0px); display: flex; justify-content: space-between; height: 60px; padding: 0 7px; border: 0; background: none; }
 .ui-mobile .modal-foot .btn { min-height: 60px; padding: 0 7px; border-radius: 0; background: none; box-shadow: none; color: var(--tint); font-size: 17px; font-weight: 300; }
 .ui-mobile .modal-foot .btn-primary { font-weight: 500; }
 .ui-mobile .modal-foot .btn:only-child { margin-left: auto; }
-.ui-mobile .btn { color: var(--tint); font-size: 15px; font-weight: 400; }
+.ui-mobile .btn { border-radius: 14px; color: var(--tint); font-size: 15px; font-weight: 400; }
 .ui-mobile .btn-danger, .ui-mobile .modal-foot .btn-danger { color: var(--danger); }
 .ui-mobile .field { padding: 10px 12px; border-radius: 0; background: var(--raised); box-shadow: none; color: var(--text); font-size: 16px; font-weight: 300; }
 .ui-mobile .field::placeholder { color: var(--muted); }
@@ -318,7 +294,6 @@
 .ui-mobile .link { color: var(--tint); text-decoration: none; }
 .ui-mobile .modal-body a { color: var(--tint); }
 
-/* Alerta central. */
 .ui-mobile .modal.alert { align-items: center; justify-content: center; padding: 30px; background: var(--backdrop); animation: fade .22s ease both; }
 .ui-mobile .modal.alert.leaving { animation: fade-out .2s ease both; }
 .ui-mobile .modal.alert .modal-card { width: 270px; border-radius: 12px; overflow: hidden; background: var(--raised); animation: alert-in .3s var(--ios) both; }
@@ -328,7 +303,6 @@
 .ui-mobile .modal.alert .modal-foot .btn { flex: 1; min-height: 44px; }
 .ui-mobile .modal.alert .field { border-radius: 6px; background: var(--bg); padding: 6px 8px; font-size: 16px; }
 
-/* Action sheet. */
 .ui-mobile .menu-layer { background: var(--backdrop); animation: fade .25s ease both; }
 .ui-mobile .menu-layer.leaving { animation: fade-out .3s ease both; }
 .ui-mobile .menu {
@@ -345,17 +319,16 @@
   animation: sheet-up .46s var(--ios) both;
 }
 .ui-mobile .menu-layer.leaving .menu { animation: sheet-down .3s var(--ios) both; }
-.ui-mobile .menu-title { display: block; overflow: hidden; padding: 12px; border-radius: 12px 12px 0 0; background: var(--raised); color: var(--muted); font-size: 13px; font-weight: 400; text-align: center; white-space: nowrap; text-overflow: ellipsis; }
+.ui-mobile .menu-title { display: block; overflow: hidden; padding: 12px; border-radius: 14px 14px 0 0; background: var(--raised); color: var(--muted); font-size: 13px; font-weight: 400; text-align: center; white-space: nowrap; text-overflow: ellipsis; }
 .ui-mobile .menu-item { justify-content: center; min-height: 50px; padding: 0 12px; background: var(--raised); box-shadow: none; color: var(--tint); font-size: 19px; font-weight: 300; }
 .ui-mobile .menu-item.danger { color: var(--danger); }
-.ui-mobile .menu-item:has(+ .sheet-gap) { border-radius: 0 0 12px 12px; }
+.ui-mobile .menu-item:has(+ .sheet-gap) { border-radius: 0 0 14px 14px; }
 .ui-mobile .menu-item kbd, .ui-mobile .menu-arrow { display: none; }
 .ui-mobile .menu-item.checked::before { display: none; }
 .ui-mobile .menu-sep { display: none; }
 .ui-mobile .menu-sep.sheet-gap { display: block; height: 8px; margin: 0; background: none; }
-.ui-mobile .sheet-cancel { border-radius: 12px; box-shadow: none; font-weight: 500; }
+.ui-mobile .sheet-cancel { border-radius: 14px; box-shadow: none; font-weight: 500; }
 
-/* Introducao em tela cheia. */
 .ui-mobile .intro { padding: 0; background: var(--bg); -webkit-backdrop-filter: none; backdrop-filter: none; }
 .ui-mobile .intro-card { display: flex; flex-direction: column; justify-content: center; width: 100%; height: 100%; padding: calc(40px + env(safe-area-inset-top, 0px)) 14px calc(30px + env(safe-area-inset-bottom, 0px)); border-radius: 0; background: var(--bg); box-shadow: none; }
 .ui-mobile .intro-logo { width: 84px; height: 84px; margin-bottom: 26px; color: var(--text); }
@@ -367,9 +340,8 @@
 .ui-mobile .intro-dots i.on { background: var(--text); }
 .ui-mobile .intro-actions { flex-direction: column-reverse; gap: 4px; }
 .ui-mobile .intro-actions .btn { width: 100%; min-height: 46px; background: none; box-shadow: none; color: var(--tint); font-size: 17px; font-weight: 300; }
-.ui-mobile .intro-actions .btn-primary { border-radius: 8px; background: var(--tint); color: var(--on-tint); font-weight: 400; }
+.ui-mobile .intro-actions .btn-primary { border-radius: 14px; background: var(--tint); color: var(--on-tint); font-weight: 400; }
 
-/* Pecas de base.css. */
 .ui-mobile .cover { background: var(--raised); }
 .ui-mobile .cover-empty { background: var(--raised); color: var(--faint); }
 .ui-mobile .why li, .ui-mobile .chips li { color: var(--muted); }
@@ -377,6 +349,7 @@
 .ui-mobile .compass text { fill: var(--muted); }
 .ui-mobile .why-cover { border-radius: 10px; }
 .ui-mobile .add-progress img { width: 22px; height: 22px; }
+.ui-mobile .import-actions .btn { min-height: 44px; background: var(--raised); box-shadow: none; }
 .ui-mobile #toast { bottom: calc(62px + env(safe-area-inset-bottom, 0px)); border-radius: 8px; background: var(--raised); color: var(--text); font-size: 14px; font-weight: 400; transform: translate(-50%, 0); transition: opacity .25s ease; }
 
 @keyframes fade { from { opacity: 0; } }

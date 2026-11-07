@@ -1,9 +1,6 @@
-// Descobre genero, album e ano no catalogo do iTunes e mede o audio real.
-// Musicas do YouTube nao expoem audio ao navegador, entao a analise usa a
-// previa de 30 segundos da mesma faixa. Arquivos locais usam o proprio audio.
-
 import { bus, sleep } from './bus.js';
 import { db } from './db.js';
+import { shrinkCover } from './cover.js';
 import { fold, normalizeGenre } from '../metis/genres.js';
 
 const SAMPLE_RATE = 22050;
@@ -37,7 +34,7 @@ async function decodeToMono(arrayBuffer) {
   const Offline = window.OfflineAudioContext || window.webkitOfflineAudioContext;
   const decoder = new Offline(1, 1, 44100);
   const decoded = await decoder.decodeAudioData(arrayBuffer);
-  // Limita a 3 minutos para arquivos longos nao estourarem a memoria do iPhone.
+
   const seconds = Math.min(decoded.duration, 180);
   const start = Math.max(0, (decoded.duration - seconds) / 2);
   const offline = new Offline(1, Math.ceil(seconds * SAMPLE_RATE), SAMPLE_RATE);
@@ -83,7 +80,6 @@ export async function lookupCatalog(track) {
   return best;
 }
 
-// Fila lenta: a API do iTunes aceita cerca de 20 pedidos por minuto.
 class EnrichQueue {
   constructor() {
     this.queue = [];
@@ -139,7 +135,12 @@ class EnrichQueue {
       }
     }
 
-    const needsCatalog = !track.genre || !track.album || !(track.features || patch.features);
+    const remoteCover = /^https?:/.test(track.cover || '');
+    if (remoteCover) {
+      usedNetwork = true;
+      patch.cover = await shrinkCover(track.cover);
+    }
+    const needsCatalog = !track.genre || !track.album || !track.cover || !(track.features || patch.features);
     if (needsCatalog) {
       usedNetwork = true;
       const match = await lookupCatalog(track);
@@ -149,6 +150,7 @@ class EnrichQueue {
           patch.genreId = normalizeGenre(match.primaryGenreName);
         }
         if (!track.duration && match.trackTimeMillis) patch.duration = match.trackTimeMillis / 1000;
+        if (!track.cover && !patch.cover && match.artworkUrl100) patch.cover = await shrinkCover(match.artworkUrl100);
         if (!track.album && match.collectionName) patch.album = match.collectionName;
         if (!track.year && match.releaseDate) patch.year = new Date(match.releaseDate).getFullYear();
         if (match.artistName && (track.artist === 'YouTube' || track.needsArtist)) patch.artist = match.artistName;

@@ -1,6 +1,3 @@
-// Fila, modos de ordem e aprendizado. As interfaces so chamam metodos daqui
-// e reagem aos eventos do barramento.
-
 import { bus } from './bus.js';
 import { db } from './db.js';
 import { store } from './store.js';
@@ -27,18 +24,18 @@ class Player {
     this.youtube = new YouTubeEngine();
     this.engine = null;
     this.current = null;
-    this.currentEntry = null; // decisao do Metis para a faixa atual
+    this.currentEntry = null;
     this.intent = 'metis';
     this.previous = null;
-    this.order = 'metis'; // metis | shuffle | sequence
-    this.repeat = 'off'; // off | all | one
+    this.order = 'metis';
+    this.repeat = 'off';
     this.volume = 0.8;
     this.muted = false;
     this.playing = false;
-    this.queue = []; // adicionados pelo usuario
-    this.planned = []; // proximos do Metis
-    this.bag = []; // proximos do aleatorio classico
-    this.pool = null; // ids da playlist ou lista de origem; null = biblioteca
+    this.queue = [];
+    this.planned = [];
+    this.bag = [];
+    this.pool = null;
     this.poolLabel = 'Biblioteca';
     this.history = [];
     this.listened = 0;
@@ -104,9 +101,8 @@ class Player {
     return this.current.sources?.local ? 'local' : 'youtube';
   }
 
-  // Faixas elegiveis para os modos automaticos.
   _pool() {
-    const usable = (t) => (t.sources?.yt && !t.ytBlocked) || t.sources?.local;
+    const usable = (t) => (t.sources?.yt && !t.ytBlocked) || t.sources?.local || (t.sources?.spotify && !t.sources?.yt);
     if (this.pool) {
       const list = this.pool.map((id) => store.get(id)).filter((t) => t && usable(t));
       if (list.length) return list;
@@ -114,7 +110,6 @@ class Player {
     return store.tracks.filter(usable);
   }
 
-  // Replaneja a partir de agora. Chamado apos pulos, curtidas e mudancas.
   refill() {
     if (this.order !== 'metis') {
       this.planned = [];
@@ -131,7 +126,6 @@ class Player {
     bus.emit('queue');
   }
 
-  // Lista "A seguir" para as interfaces.
   upcoming(limit = 30) {
     const out = this.queue.map((id, index) => ({ track: store.get(id), kind: 'queue', index }));
     if (this.order === 'metis') {
@@ -164,7 +158,6 @@ class Player {
     if (intent === 'manual') this.refill();
   }
 
-  // Tocar uma lista inteira a partir do comeco.
   playList(ids, label, { order = null } = {}) {
     if (!ids.length) return;
     if (order) this.setOrder(order);
@@ -209,11 +202,12 @@ class Player {
         if (!row?.blob) throw new Error('missing-audio');
         await this.audio.load(row.blob, startAt);
       } else {
+        if (!track.sources.yt) await this._findVideo(track);
         await this.youtube.load(track.sources.yt, startAt);
       }
     } catch (error) {
       if (error?.name === 'NotAllowedError') {
-        // O navegador exige um toque antes de tocar.
+
         this.playing = false;
         bus.emit('player');
         bus.emit('toast', 'Toque em reproduzir para continuar.');
@@ -227,7 +221,7 @@ class Player {
     if (!this.engine) return;
     const now = this.engine.currentTime;
     const delta = now - this.lastTime;
-    // Conta so tempo realmente ouvido: um salto na barra nao vale como audicao.
+
     if (delta > 0 && delta < 2) this.listened += delta;
     this.lastTime = now;
     bus.emit('time');
@@ -237,7 +231,7 @@ class Player {
         navigator.mediaSession.setPositionState({
           duration: this.duration, position: Math.min(now, this.duration), playbackRate: 1,
         });
-      } catch { /* alguns navegadores recusam valores transitorios */ }
+      } catch {  }
     }
   }
 
@@ -249,7 +243,15 @@ class Player {
     bus.emit('time');
   }
 
-  // Video bloqueado ou removido: troca por outra versao da mesma musica.
+  async _findVideo(track) {
+    const found = await findPlayable(track, []);
+    if (!found) throw new Error('not-found');
+    await store.update(track.id, {
+      sources: { ...track.sources, yt: found.id },
+      url: `https://www.youtube.com/watch?v=${found.id}`,
+    });
+  }
+
   async _recover(track) {
     const tried = [...(track.ytTried || []), track.sources.yt];
     if (tried.length > 3) return false;
@@ -274,7 +276,7 @@ class Player {
     this.errorStreak += 1;
     if (String(code).startsWith('youtube:')) {
       const reason = String(code).split(':')[1];
-      // 100: removido. 101 e 150: o dono bloqueou a reproducao fora do YouTube.
+
       if (reason === '101' || reason === '150' || reason === '100') {
         if (await this._recover(track)) return;
         store.update(track.id, { ytBlocked: true });
@@ -297,13 +299,12 @@ class Player {
     }
   }
 
-  // Registra o fim da audicao e treina o modelo.
   _finish({ skipped }) {
     const track = this.current;
     if (!track || !this.startContext) return;
     const duration = this.duration || track.duration || 0;
     const listened = this.listened;
-    // Abriu e trocou em menos de 3 segundos: sem sinal para aprender.
+
     if (listened < 3 && skipped) {
       this.startContext = null;
       return;
@@ -411,7 +412,7 @@ class Player {
     const track = store.get(step.id);
     if (!track) return this.next({ userAction: false });
     await this._start(track, { intent: intent || step.intent, entry: step.entry || null });
-    // Um pulo muda a estimativa de humor, entao os proximos sao recalculados.
+
     if (this.order === 'metis') {
       if (userAction || failed || this.planned.length < PLAN_SIZE / 2) this.refill();
       else bus.emit('queue');
@@ -486,7 +487,6 @@ class Player {
     bus.emit('player');
   }
 
-  // Botao classico de aleatorio: alterna com o modo sequencial.
   toggleShuffle() {
     this.setOrder(this.order === 'shuffle' ? 'sequence' : 'shuffle');
   }
@@ -523,7 +523,6 @@ class Player {
     this.refill();
   }
 
-  // Escolhe um item da lista A seguir: pula tudo o que estava antes dele.
   jumpTo(row) {
     if (row.kind === 'queue') {
       const [id] = this.queue.splice(row.index, 1);
@@ -571,7 +570,7 @@ class Player {
   _bindMediaSession() {
     if (!('mediaSession' in navigator)) return;
     const set = (action, fn) => {
-      try { navigator.mediaSession.setActionHandler(action, fn); } catch { /* acao nao suportada */ }
+      try { navigator.mediaSession.setActionHandler(action, fn); } catch {  }
     };
     set('play', () => this.toggle());
     set('pause', () => this.toggle());

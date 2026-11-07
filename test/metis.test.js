@@ -1,7 +1,3 @@
-// Executar com: npm test
-// O teste principal usa um ouvinte simulado com gosto dependente de hora e
-// clima, escondido do modelo. O Metis so ve os pulos, como no app real.
-
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { Metis, heuristicPrior, moodLabel } from '../js/metis/engine.js';
@@ -35,7 +31,6 @@ function makeLibrary(size, seed = 1) {
   return out;
 }
 
-// Gosto secreto: de noite ou chovendo prefere calmo; de dia, animado.
 function completionChance(track, ctx) {
   const f = resolve(track);
   const night = ctx.hour >= 22 || ctx.hour < 6;
@@ -147,7 +142,7 @@ test('a onda muda o clima ao longo da sessao sem saltos bruscos', () => {
   let prev = null;
   const arousal = [];
   const valence = [];
-  // Ouvinte que aceita tudo: se nada empurrar, a sessao ficaria parada.
+
   for (let i = 0; i < 180; i++) {
     const ctx = buildContext({ date: new Date(new Date(2026, 2, 3, 15).getTime()), weather: { kind: 'cloudy', temp: 22 } });
     ctx.ts = ts;
@@ -249,7 +244,7 @@ test('gradiente do backprop bate com a diferenca numerica', () => {
   W[2] = original + h;
   const numeric = (loss() - before) / h;
   W[2] = original;
-  // Com Adam no primeiro passo, o deslocamento tem o sinal oposto ao gradiente.
+
   net.train([{ x, wide, y, w: 1 }]);
   assert.equal(Math.sign(W[2] - original), -Math.sign(numeric));
 });
@@ -281,7 +276,6 @@ test('DSP separa graves de agudos e acha o tom', () => {
   assert.ok(high.treble > low.treble);
   assert.ok(high.brightness > low.brightness);
 
-  // Acorde de La menor com oitavas.
   const notes = [220, 261.63, 329.63, 440, 523.25, 659.25];
   const minor = analyzePCM(synth(10, sr, (t) => notes.reduce((s, f) => s + Math.sin(2 * Math.PI * f * t), 0) / 8), sr);
   assert.equal(minor.key, 9);

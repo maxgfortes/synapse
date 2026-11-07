@@ -1,6 +1,3 @@
-// Leitura de metadados de arquivos de audio no navegador: ID3v2 (MP3),
-// atomos MP4 (M4A/AAC) e Vorbis Comment (FLAC).
-
 const decoders = {
   latin1: new TextDecoder('latin1'),
   utf8: new TextDecoder('utf-8'),
@@ -35,7 +32,7 @@ function id3Picture(bytes, v22) {
     mime = decoders.latin1.decode(bytes.subarray(1, end)) || mime;
     i = end + 1;
   }
-  i += 1; // tipo da imagem
+  i += 1;
   const wide = bytes[0] === 1 || bytes[0] === 2;
   if (wide) {
     while (i + 1 < bytes.length && !(bytes[i] === 0 && bytes[i + 1] === 0)) i += 2;
@@ -90,7 +87,7 @@ function parseId3(buffer) {
     else if ((id === 'APIC' || id === 'PIC') && !tags.picture) tags.picture = id3Picture(body, v22);
     o += headerSize + length;
   }
-  // TCON pode vir como "(17)" no ID3v1 numerico. Sem nome, descarta.
+
   if (tags.genre && /^\(?\d+\)?$/.test(tags.genre)) delete tags.genre;
   return tags;
 }
@@ -171,7 +168,6 @@ function parseFlac(buffer) {
   return tags;
 }
 
-// "Artista - Titulo.mp3" vira metadados quando o arquivo nao tem tags.
 export function parseFilename(name) {
   const base = name.replace(/\.[^.]+$/, '').replace(/_/g, ' ').trim();
   const match = base.match(/^(?:\d{1,3}[\s.\-_]+)?(.+?)\s+[-–—]\s+(.+)$/);
@@ -179,7 +175,7 @@ export function parseFilename(name) {
 }
 
 export async function readTags(file) {
-  // Tags ficam no comeco; MP4 pode guardar moov no fim do arquivo.
+
   const head = await file.slice(0, 2 * 1024 * 1024).arrayBuffer();
   let tags = parseId3(head) || parseFlac(head);
   if (!tags) {

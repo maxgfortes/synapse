@@ -1,6 +1,3 @@
-/* SF Pro embutida para quem nao tem a fonte no sistema, como no Windows.
-   Em aparelhos Apple, o sistema entrega os pesos finos que este arquivo nao tem. */
-
 @font-face {
   font-family: "SF Pro";
   font-weight: 100 400;

@@ -26,11 +26,17 @@ Ao publicar uma versão nova, aumente `VERSION` em `sw.js`. Para refazer imagens
 
 ## Busca do YouTube
 
-A busca usa a YouTube Data API v3 quando há uma chave em `js/config.js` ou em Preferências. O repositório não traz chave: a de `js/config.js` fica visível no código do site, então só deve ser preenchida com uma chave restrita por domínio no Google Cloud. Cada busca gasta 100 unidades de uma cota diária de 10.000, ou seja, cerca de 100 buscas por dia para todos os usuários somados. Quando a cota acaba, a busca passa para um espelho público (Piped), que pode sair do ar. Cada usuário também pode colar a própria chave em Preferências.
+A busca usa a YouTube Data API v3 com a chave de `js/config.js` ou a salva em Preferências. A chave de `js/config.js` fica visível no código do site, então deve estar restrita por domínio no Google Cloud. Cada busca gasta 100 unidades de uma cota diária de 10.000, ou seja, cerca de 100 buscas por dia para todos os usuários somados. Quando a cota acaba, a busca passa para um espelho público (Piped), que pode sair do ar. Cada usuário também pode colar a própria chave em Preferências.
 
 A API entrega busca e metadados, não o áudio. O áudio vem do player oficial do YouTube, que fica atrás da interface: o usuário só vê o player do Synapse. Se um vídeo estiver bloqueado para reprodução externa ou tiver sido removido, o app procura outra versão da mesma música e troca sozinho, gastando mais 100 unidades.
 
 Colar links funciona sempre.
+
+## Importar do Spotify
+
+Funciona pelos arquivos de "Baixar seus dados" (`YourLibrary.json` e `Playlist*.json`), sem configurar nada. Para o login direto, crie um app em developer.spotify.com, cadastre o endereço do site como Redirect URI e coloque o Client ID em `js/config.js`. Enquanto o app do Spotify estiver em modo de desenvolvimento, só entram contas liberadas no painel dele.
+
+As músicas importadas não trazem áudio. O vídeo é procurado na primeira vez que cada uma toca, e isso gasta a cota da busca do YouTube.
 
 ## Como o Metís funciona
 

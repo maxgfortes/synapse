@@ -1,7 +1,3 @@
-// Motores de reproducao. A mesma interface serve para arquivo local (<audio>)
-// e YouTube (IFrame Player). O iframe nao pode ser recriado ao mudar de tela,
-// entao fica fixo em #yt-host e a interface so posiciona esse host.
-
 import { bus } from './bus.js';
 
 export class AudioEngine {

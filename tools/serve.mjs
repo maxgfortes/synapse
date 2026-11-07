@@ -1,5 +1,3 @@
-// Servidor estatico para desenvolvimento: node tools/serve.mjs [porta]
-
 import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize, resolve } from 'node:path';

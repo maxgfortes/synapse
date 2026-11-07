@@ -1,6 +1,3 @@
-// Interface de celular: areas do app Musica do iOS, em preto solido.
-// Abas trocam na hora; so push, pop e paginas modais se movem.
-
 import { CONFIG } from '../config.js';
 import { bus, escapeHtml as esc, formatTime } from '../core/bus.js';
 import { store } from '../core/store.js';
@@ -11,7 +8,7 @@ import { fold } from '../metis/genres.js';
 import { icons } from './icons.js';
 import {
   bindMetisPanel, confirmBox, cover, enrichStatus, genreLabel, html, isIOS, links, metisPanel, newPlaylist, openAdd,
-  openPrefs, promptBox, showLargeCover, showMenu, toast, trackMenuItems,
+  openPrefs, openSpotifyImport, promptBox, showLargeCover, showMenu, toast, trackMenuItems,
 } from './shared.js';
 
 const TABS = [
@@ -38,7 +35,6 @@ const state = {
   seeking: false,
 };
 
-// O iOS ignora mudancas de volume via JavaScript.
 const canSetVolume = !isIOS();
 
 let root;
@@ -127,20 +123,15 @@ function songList(list, { sections = true } = {}) {
   const sorted = list.slice().sort((a, b) => collator.compare(a.title, b.title));
   let last = null;
   let out = '';
-  const keys = [];
   for (const t of sorted) {
     const key = sectionKey(t.title);
     if (key !== last) {
-      out += `<h2 class="section" id="sec-${key === '#' ? 'num' : key}">${key}</h2>`;
-      keys.push(key);
+      out += `<h2 class="section">${key}</h2>`;
       last = key;
     }
     out += songCell(t);
   }
-  const index = keys.length > 3
-    ? `<nav class="m-index" aria-label="Índice">${keys.map((k) => `<button type="button" data-sec="${k === '#' ? 'num' : k}">${k}</button>`).join('')}</nav>`
-    : '';
-  return out + index;
+  return out;
 }
 
 function emptyState() {
@@ -233,6 +224,7 @@ function view(route) {
         ${navCell('data-push="recent"', glyph(icons.clock), 'Adições recentes')}
         <h2 class="section plain">Biblioteca</h2>
         ${navCell('data-do="add"', glyph(icons.plus), 'Adicionar músicas')}
+        ${navCell('data-do="spotify"', glyph(icons.download), 'Importar do Spotify')}
         ${navCell('data-do="prefs"', glyph(icons.gear), 'Preferências, dados e ML')}
         <h2 class="section plain">Synapse</h2>
         ${external(links.about, icons.globe, 'Sobre', false)}
@@ -273,7 +265,6 @@ function renderTabs() {
   });
 }
 
-// Com movimento, a tela anterior fica por baixo ate a animacao terminar.
 function render(movement = '') {
   renderNav(!!movement);
   renderTabs();
@@ -310,8 +301,9 @@ function renderNow() {
   }
   const swapped = state.nowTrack && state.nowTrack !== t.id;
   state.nowTrack = t.id;
-  panel.innerHTML = `<header class="now-top">
-      <button type="button" class="now-icon" data-do="close-now" aria-label="Fechar">${icons.down}</button>
+  panel.innerHTML = `<canvas class="now-ambient" aria-hidden="true"></canvas>
+    <header class="now-top">
+      <button type="button" class="now-icon" data-do="close-now" aria-label="Fechar">${icons.back}</button>
       <span class="now-pool" id="now-pool"></span>
       <button type="button" class="now-icon" data-do="up-next" aria-label="A seguir">${icons.list}</button>
     </header>
@@ -339,6 +331,7 @@ function renderNow() {
   syncNow();
   renderTime();
   showLargeCover(t, panel.querySelector('.now-cover'));
+  paintAmbient(t);
   panel.querySelector('#now-seek').addEventListener('input', (e) => {
     state.seeking = true;
     const seconds = (e.target.value / 1000) * player.duration;
@@ -352,7 +345,52 @@ function renderNow() {
   panel.querySelector('#now-vol')?.addEventListener('input', (e) => player.setVolume(e.target.value / 100));
 }
 
-// Atualiza sem recriar a tela, para a capa poder recuar ao pausar.
+function paintAmbient(track) {
+  const panel = $('#now');
+  const canvas = panel.querySelector('.now-ambient');
+  const art = panel.querySelector('.now-art');
+  if (!canvas || !track.cover) return;
+  const image = new Image();
+  image.onload = () => {
+    if (!canvas.isConnected) return;
+    const scale = 0.25;
+    const margin = 60;
+    canvas.width = Math.ceil((panel.clientWidth + margin * 2) * scale);
+    canvas.height = Math.ceil((panel.clientHeight + margin * 2) * scale);
+    const small = document.createElement('canvas');
+    small.width = 24;
+    small.height = 24;
+    small.getContext('2d').drawImage(image, 0, 0, 24, 24);
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    const size = art.offsetWidth * scale;
+    const cx = canvas.width / 2;
+    const cy = (art.offsetTop + art.offsetWidth / 2 + margin) * scale;
+    for (let ring = 6; ring >= 0; ring--) {
+      const side = size * (1.05 + ring * 0.16);
+      ctx.save();
+      ctx.globalAlpha = 0.62 * 0.62 ** ring;
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(cx - side / 2, cy - side / 2, side, side, side * 0.16);
+      else ctx.rect(cx - side / 2, cy - side / 2, side, side);
+      ctx.clip();
+      ctx.drawImage(small, cx - side / 2, cy - side / 2, side, side);
+      ctx.restore();
+    }
+
+    const soft = document.createElement('canvas');
+    soft.width = Math.ceil(canvas.width / 3);
+    soft.height = Math.ceil(canvas.height / 3);
+    const softCtx = soft.getContext('2d');
+    softCtx.imageSmoothingQuality = 'high';
+    softCtx.drawImage(canvas, 0, 0, soft.width, soft.height);
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(soft, 0, 0, canvas.width, canvas.height);
+  };
+  image.src = track.cover;
+}
+
 function syncNow() {
   const t = player.current;
   const panel = $('#now');
@@ -371,7 +409,7 @@ function syncNow() {
   }
 
   const like = panel.querySelector('#now-like');
-  // Musica fora da biblioteca: no lugar de curtir, o botao adiciona.
+
   const saved = store.isSaved(t.id);
   like.dataset.do = saved ? 'like' : 'save-current';
   like.classList.toggle('on', saved ? !!t.liked : true);
@@ -458,6 +496,7 @@ async function action(name) {
     back: pop,
     add: () => openAdd(),
     prefs: openPrefs,
+    spotify: openSpotifyImport,
     'new-playlist': () => newPlaylist(),
     'open-now': openNow,
     'close-now': closeNow,
@@ -516,8 +555,6 @@ function onClick(event) {
   if (playlist) return push({ view: 'playlist', id: playlist.dataset.playlist });
   const group = t.closest('[data-group]');
   if (group) return push({ view: 'group', group: group.dataset.group, name: group.dataset.name });
-  const section = t.closest('[data-sec]');
-  if (section) return document.getElementById(`sec-${section.dataset.sec}`)?.scrollIntoView();
   const song = t.closest('[data-song]');
   if (song) {
     player.play(song.dataset.song, { intent: 'manual', list: currentIds(), label: listLabel() });
@@ -551,7 +588,7 @@ function onClick(event) {
 
 async function runSearch(query) {
   const e = state.explore;
-  // So a busca mais recente pode mostrar resultado.
+
   const ticket = ++e.ticket;
   e.query = query;
   e.error = '';
@@ -595,27 +632,26 @@ function bindLongPress() {
   root.addEventListener('touchend', cancel);
 }
 
-// A tela Tocando acompanha o dedo e fecha ao passar de um terco da altura.
-function bindSwipeDown() {
+function bindSwipeRight() {
   const panel = $('#now');
-  let startY = null;
+  let startX = null;
   let distance = 0;
   panel.addEventListener('touchstart', (event) => {
-    startY = event.target.closest('input, .now-controls, .now-modes') ? null : event.touches[0].clientY;
+    startX = event.target.closest('input, .now-modes') ? null : event.touches[0].clientX;
     distance = 0;
   }, { passive: true });
   panel.addEventListener('touchmove', (event) => {
-    if (startY == null) return;
-    distance = Math.max(0, event.touches[0].clientY - startY);
+    if (startX == null) return;
+    distance = Math.max(0, event.touches[0].clientX - startX);
     panel.classList.add('dragging');
-    panel.style.transform = `translateY(${distance}px)`;
+    panel.style.transform = `translateX(${distance}px)`;
   }, { passive: true });
   panel.addEventListener('touchend', () => {
-    if (startY == null) return;
-    startY = null;
+    if (startX == null) return;
+    startX = null;
     panel.classList.remove('dragging');
     panel.style.transform = '';
-    if (distance > innerHeight / 3 || distance > 140) closeNow();
+    if (distance > innerWidth / 3) closeNow();
   });
 }
 
@@ -650,7 +686,7 @@ export function mountMobile(container) {
     if (top().view === 'explore') render();
   });
   bindLongPress();
-  bindSwipeDown();
+  bindSwipeRight();
 
   const rerenderIfMetis = () => {
     if (top().view === 'metis') render();

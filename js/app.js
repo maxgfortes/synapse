@@ -1,14 +1,11 @@
-// Ponto de entrada: abre os dados, escolhe a interface e registra o PWA.
-
 import { db } from './core/db.js';
 import { store } from './core/store.js';
 import { player } from './core/player.js';
 import { contextService } from './core/context.js';
-import { applyTheme, openAdd, runIntro, toast, ui } from './ui/shared.js';
+import { applyTheme, openAdd, resumeSpotifyLogin, runIntro, toast, ui } from './ui/shared.js';
 import { mountDesktop, unmountDesktop } from './ui/desktop.js';
 import { mountMobile, unmountMobile } from './ui/mobile.js';
 
-// O HTML guarda o titulo completo para os buscadores.
 document.title = 'Synapse';
 
 const MOBILE_QUERY = matchMedia('(max-width: 820px)');
@@ -19,7 +16,7 @@ function mountInterface() {
   if (ui.mounted === next) return;
   if (ui.mounted === 'mobile') unmountMobile();
   if (ui.mounted === 'desktop') unmountDesktop();
-  // Troca o elemento para descartar os listeners da interface anterior.
+
   const current = document.getElementById('app');
   const fresh = current.cloneNode(false);
   current.replaceWith(fresh);
@@ -31,7 +28,6 @@ function mountInterface() {
   else mountDesktop(fresh);
 }
 
-// Compartilhar um link para o app ou abrir audio pelo Windows.
 function handleLaunch() {
   const params = new URLSearchParams(location.search);
   const shared = params.get('url') || params.get('text');
@@ -73,9 +69,9 @@ async function start() {
   document.getElementById('boot')?.remove();
   if (!(await db.getKV('introDone', false))) await runIntro();
   handleLaunch();
+  resumeSpotifyLogin();
   registerServiceWorker();
 
-  // Salva a posicao ao sair: o iOS mata PWAs sem aviso.
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       player._persist();

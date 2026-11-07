@@ -1,6 +1,3 @@
-// Coleta o contexto real: hora, localizacao aproximada, clima e feriados.
-// As coordenadas sao arredondadas (cerca de 10 km) antes de qualquer uso.
-
 import { buildContext, weatherClass } from '../metis/context.js';
 import { db } from './db.js';
 import { bus } from './bus.js';
@@ -17,7 +14,7 @@ class ContextService {
     this.weather = null;
     this.place = null;
     this.holidays = {};
-    this.consent = 'unset'; // unset | granted | denied
+    this.consent = 'unset';
     this.session = { start: Date.now(), last: 0, depth: 0, recentSkips: 0 };
     this.volume = 0.8;
     this.history = { temps: [] };
@@ -77,9 +74,9 @@ class ContextService {
         const data = await response.json();
         city = data.city || data.locality || data.principalSubdivision || null;
         country = data.countryCode || null;
-      } catch { /* cidade e so um rotulo */ }
+      } catch {  }
     }
-    // Lugar mais frequente vira "casa"; o resto conta como fora de casa.
+
     this.home[id] = (this.home[id] || 0) + 1;
     const top = Object.entries(this.home).sort((a, b) => b[1] - a[1])[0]?.[0];
     this.place = { id, lat: rLat, lon: rLon, city, country, away: top !== id };
@@ -116,7 +113,7 @@ class ContextService {
       if (!response.ok) return;
       const data = await response.json();
       const c = data.current;
-      // Anomalia: quanto esta mais quente ou frio que a media dos ultimos dias.
+
       const temps = this.history.temps;
       temps.push({ ts: Date.now(), t: c.temperature_2m });
       const cutoff = Date.now() - 14 * 864e5;
@@ -140,7 +137,7 @@ class ContextService {
       await db.setKV('weather', this.weather);
       await db.setKV('weatherHistory', this.history);
       bus.emit('context');
-    } catch { /* offline: mantem o ultimo clima conhecido */ }
+    } catch {  }
   }
 
   async _fetchHolidays(country) {
@@ -152,7 +149,7 @@ class ContextService {
       if (!response.ok) return;
       this.holidays[key] = (await response.json()).map((h) => h.date);
       await db.setKV('holidays', this.holidays);
-    } catch { /* feriado e opcional */ }
+    } catch {  }
   }
 
   _isHoliday(date) {
@@ -163,7 +160,6 @@ class ContextService {
     return (this.holidays[key] || []).includes(today);
   }
 
-  // Sessao nova apos 30 minutos sem ouvir nada.
   touchSession(skipped = false) {
     const now = Date.now();
     const s = this.session;

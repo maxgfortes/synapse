@@ -1,6 +1,4 @@
-// Service worker: abre offline e atualiza em segundo plano.
-
-const VERSION = 'synapse-v9';
+const VERSION = 'synapse-v11';
 const THUMBS = 'synapse-thumbs-v1';
 
 const SHELL = [
@@ -8,7 +6,7 @@ const SHELL = [
   'css/fonts.css', 'css/base.css', 'css/desktop.css', 'css/mobile.css', 'css/pages.css',
   'assets/fonts/SFPro-Regular.woff2', 'assets/fonts/SFPro-Medium.woff2', 'assets/fonts/SFPro-Bold.woff2',
   'js/app.js', 'js/config.js', 'js/no-zoom.js',
-  'js/core/analysis-worker.js', 'js/core/bus.js', 'js/core/context.js', 'js/core/db.js', 'js/core/engines.js',
+  'js/core/analysis-worker.js', 'js/core/bus.js', 'js/core/cover.js', 'js/core/spotify.js', 'js/core/context.js', 'js/core/db.js', 'js/core/engines.js',
   'js/core/enrich.js', 'js/core/player.js', 'js/core/store.js', 'js/core/tags.js', 'js/core/youtube.js',
   'js/metis/context.js', 'js/metis/dsp.js', 'js/metis/engine.js', 'js/metis/features.js', 'js/metis/genres.js',
   'js/metis/math.js', 'js/metis/nn.js',

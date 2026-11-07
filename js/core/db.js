@@ -1,5 +1,3 @@
-// IndexedDB: biblioteca, playlists, eventos, audio local e modelo.
-
 const NAME = 'synapse';
 const VERSION = 1;
 let connection = null;

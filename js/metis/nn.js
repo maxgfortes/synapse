@@ -1,6 +1,3 @@
-// Rede Wide & Deep minima com backprop escrito a mao e otimizador Adam.
-// Sem TensorFlow: treina no aparelho e os pesos cabem em um JSON exportavel.
-
 import { makeRng, sigmoid, clamp } from './math.js';
 
 const zeros = (n) => new Float64Array(n);
@@ -72,7 +69,6 @@ export class WideDeep {
     return sigmoid(this.logit(x, wide));
   }
 
-  // batch: [{ x, wide, y, w }]. Devolve a perda media antes do passo.
   train(batch) {
     const params = this._params();
     const grads = params.map((p) => zeros(p.length));

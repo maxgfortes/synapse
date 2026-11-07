@@ -62,6 +62,7 @@ export class YouTubeEngine {
     this.holder = null;
     this.timer = null;
     this.startCheck = null;
+    this.ticket = 0;
     this.isPlaying = false;
     this.volume = 0.8;
   }
@@ -89,7 +90,9 @@ export class YouTubeEngine {
   }
 
   async load(videoId, startAt = 0) {
+    const ticket = ++this.ticket;
     const YT = await loadYouTubeApi();
+    if (ticket !== this.ticket) return;
     this._destroy();
     const mount = document.createElement('div');
     this._getHolder().appendChild(mount);
@@ -156,7 +159,10 @@ export class YouTubeEngine {
 
   play() { this.player?.playVideo?.(); }
   pause() { this.player?.pauseVideo?.(); }
-  stop() { this._destroy(); }
+  stop() {
+    this.ticket++;
+    this._destroy();
+  }
   seek(seconds) { this.player?.seekTo?.(seconds, true); }
   setVolume(value) {
     this.volume = value;

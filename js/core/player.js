@@ -52,9 +52,18 @@ class Player {
     this.applyVolume();
 
     bus.on('engine:time', () => this._onTime());
+    if ('BroadcastChannel' in window) {
+      this.channel = new BroadcastChannel('synapse-player');
+      this.channel.onmessage = () => {
+        if (this.playing) this.engine?.pause();
+      };
+    }
     bus.on('engine:state', (playing) => {
       this.playing = playing;
-      if (playing) this.errorStreak = 0;
+      if (playing) {
+        this.errorStreak = 0;
+        this.channel?.postMessage('playing');
+      }
       if ('mediaSession' in navigator) navigator.mediaSession.playbackState = playing ? 'playing' : 'paused';
       bus.emit('player');
     });
